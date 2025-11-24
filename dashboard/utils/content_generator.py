@@ -14,7 +14,7 @@ def get_random_content(api_key):
         # Broader prompt for any language and uniqueness
         prompt = (
             "Generate a unique, interesting, and medium-level code snippet in a RANDOM programming language "
-            "(e.g., Python, JavaScript, C++, Java, React, HTML, CSS, etc.). "
+            "(e.g., Python, Rust, Go, JavaScript, C++, Swift, Kotlin, etc.). "
             "Do not repeat common examples like 'Hello World'. "
             "Include a comment at the top stating the language and what the code does. "
             "Provide ONLY the code, no markdown formatting."
@@ -33,3 +33,4 @@ def get_random_content(api_key):
         
     except Exception as e:
         return f"Error generating content: {str(e)}"
+
