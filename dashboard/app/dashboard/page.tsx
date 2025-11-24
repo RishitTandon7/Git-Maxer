@@ -26,7 +26,6 @@ export default function Dashboard() {
     const mouseX = useMotionValue(0)
     const mouseY = useMotionValue(0)
 
-    // Call useTransform unconditionally (hooks must be in same order every render)
     const transformX = useTransform(mouseX, (x) => x - 300)
     const transformY = useTransform(mouseY, (y) => y - 300)
 
@@ -91,7 +90,6 @@ export default function Dashboard() {
         const { error } = await supabase
             .from('user_settings')
             .update({
-                min_contributions: config.min_contributions,
                 pause_bot: config.pause_bot,
                 preferred_language: config.preferred_language,
                 commit_time: config.commit_time
@@ -166,9 +164,9 @@ export default function Dashboard() {
                     <motion.div whileHover={{ scale: 1.02 }} className="glass-panel p-6 rounded-2xl">
                         <div className="flex items-center gap-3 mb-2 text-green-400">
                             <Code className="w-5 h-5" />
-                            <span className="font-semibold">Language</span>
+                            <span className="font-semibold">Min/Day</span>
                         </div>
-                        <div className="text-lg font-bold capitalize">{config.preferred_language}</div>
+                        <div className="text-2xl font-bold">{config.min_contributions}</div>
                     </motion.div>
                 </div>
 
@@ -207,17 +205,6 @@ export default function Dashboard() {
                         <div className="flex items-center gap-3 text-xl font-semibold border-b border-gray-800 pb-4">
                             <Settings className="w-6 h-6" />
                             Bot Configuration
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm text-gray-400">
-                                Min Contributions / Day: <span className="text-blue-400 font-bold">{config.min_contributions}</span>
-                            </label>
-                            <input type="range" min="1" max="10" value={config.min_contributions} onChange={(e) => setConfig({ ...config, min_contributions: parseInt(e.target.value) })} className="w-full" />
-                            <div className="flex justify-between text-xs text-gray-500">
-                                <span>1</span>
-                                <span>10</span>
-                            </div>
                         </div>
 
                         <div className="space-y-2">
