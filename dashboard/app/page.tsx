@@ -1,22 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import { Github, ArrowRight, Mail, Terminal, Cpu, ShieldCheck, Activity } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Github, Mail, Terminal } from 'lucide-react'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState<'github' | 'google' | null>(null)
-  const [count, setCount] = useState(0)
-
-  // Animated Counter for "Contributions Generated"
-  useEffect(() => {
-    const controls = animate(0, 12453, {
-      duration: 3,
-      onUpdate: (value) => setCount(Math.floor(value))
-    })
-    return controls.stop
-  }, [])
 
   const handleLogin = async (provider: 'github' | 'google') => {
     setLoading(provider)
