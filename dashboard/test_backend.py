@@ -11,11 +11,13 @@ load_dotenv('.env.local')
 
 SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-GITHUB_TOKEN = os.getenv("GITHUB_ACCESS_TOKEN")
+GITHUB_TOKEN = os.getenv("GITHUB_ACCESS_TOKEN") or os.getenv("GITHUB_TOKEN")
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 
 print(f"SUPABASE_URL: {SUPABASE_URL}")
-print(f"GITHUB_TOKEN: {'Found' if GITHUB_TOKEN else 'Missing'}")
+for key in os.environ:
+    if key.startswith("GITHUB"):
+        print(f"Found env key: {key}")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     print("Error: Missing Supabase credentials")

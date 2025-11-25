@@ -34,3 +34,26 @@ def get_random_content(api_key):
     except Exception as e:
         return f"Error generating content: {str(e)}"
 
+def get_extension(language):
+    """Returns the file extension for a given language."""
+    extensions = {
+        'python': 'py',
+        'javascript': 'js',
+        'typescript': 'ts',
+        'java': 'java',
+        'cpp': 'cpp',
+        'c++': 'cpp',
+        'go': 'go',
+        'rust': 'rs',
+        'ruby': 'rb',
+        'swift': 'swift',
+        'kotlin': 'kt',
+        'php': 'php',
+        'html': 'html',
+        'css': 'css',
+        'sql': 'sql',
+        'shell': 'sh',
+        'bash': 'sh',
+        'any': 'txt'
+    }
+    return extensions.get(language.lower(), 'txt')
