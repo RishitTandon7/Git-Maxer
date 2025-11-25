@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { motion } from 'framer-motion'
-import { Terminal, Code, Github, Zap } from 'lucide-react'
+import { Terminal, Code, Github, Zap, Lock, Globe } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -14,6 +14,8 @@ export default function SetupPage() {
 
     const [formData, setFormData] = useState({
         github_username: '',
+        repo_name: 'auto-contributions',
+        repo_visibility: 'public',
         preferred_language: 'any',
         commit_time: 'random',
         specific_time: '09:00',
@@ -49,6 +51,8 @@ export default function SetupPage() {
             const settingsData = {
                 user_id: user.id,
                 github_username: formData.github_username,
+                repo_name: formData.repo_name,
+                repo_visibility: formData.repo_visibility,
                 preferred_language: formData.preferred_language,
                 commit_time: formData.commit_time === 'random' ? null : formData.specific_time,
                 min_contributions: formData.min_contributions,
@@ -79,6 +83,38 @@ export default function SetupPage() {
         } catch (error: any) {
             console.error('Error saving settings:', error)
             alert(`Failed to save settings: ${error.message || 'Please try again.'}`)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleRepoCheck = async () => {
+        if (!formData.github_username || !formData.repo_name) return
+
+        setLoading(true)
+        try {
+            const response = await fetch('/api/setup-repo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    repo_name: formData.repo_name,
+                    visibility: formData.repo_visibility,
+                    github_username: formData.github_username
+                })
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to verify repository')
+            }
+
+            // Success!
+            alert(data.status === 'created' ? '✅ Repository created successfully!' : '✅ Repository found!')
+            setStep(2)
+
+        } catch (error: any) {
+            alert(`Error: ${error.message}`)
         } finally {
             setLoading(false)
         }
@@ -133,16 +169,56 @@ export default function SetupPage() {
                                         <Github size={24} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold">GitHub Username</h3>
-                                        <p className="text-sm text-gray-400">What's your GitHub username?</p>
+                                        <h3 className="text-xl font-bold">GitHub Configuration</h3>
+                                        <p className="text-sm text-gray-400">Connect your account and choose a repository</p>
                                     </div>
                                 </div>
+
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">Username</label>
+                                    <label className="block text-sm font-medium mb-2">GitHub Username</label>
                                     <input type="text" required value={formData.github_username} onChange={(e) => setFormData({ ...formData, github_username: e.target.value })} placeholder="octocat" className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-blue-500 transition-colors" />
                                     <p className="text-xs text-gray-500 mt-2">This should match your GitHub account username</p>
                                 </div>
-                                <button type="button" onClick={() => setStep(2)} disabled={!formData.github_username} className="w-full py-3 rounded-full bg-white text-black font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Continue</button>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Repository Name</label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-gray-500 font-mono">{formData.github_username || 'username'}/</span>
+                                        <input type="text" required value={formData.repo_name} onChange={(e) => setFormData({ ...formData, repo_name: e.target.value })} placeholder="auto-contributions" className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-blue-500 transition-colors" />
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">Bot will create this repository if it doesn't exist</p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Repository Visibility</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <label className={`flex flex-col items-center gap-2 p-4 border rounded-xl cursor-pointer transition-all ${formData.repo_visibility === 'public' ? 'bg-blue-500/10 border-blue-500' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+                                            <input type="radio" name="repo_visibility" value="public" checked={formData.repo_visibility === 'public'} onChange={(e) => setFormData({ ...formData, repo_visibility: e.target.value })} className="hidden" />
+                                            <Globe className={`w-6 h-6 ${formData.repo_visibility === 'public' ? 'text-blue-400' : 'text-gray-400'}`} />
+                                            <div className="text-center">
+                                                <div className="font-medium">Public</div>
+                                                <div className="text-xs text-gray-400">Visible to everyone</div>
+                                            </div>
+                                        </label>
+                                        <label className={`flex flex-col items-center gap-2 p-4 border rounded-xl cursor-pointer transition-all ${formData.repo_visibility === 'private' ? 'bg-blue-500/10 border-blue-500' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+                                            <input type="radio" name="repo_visibility" value="private" checked={formData.repo_visibility === 'private'} onChange={(e) => setFormData({ ...formData, repo_visibility: e.target.value })} className="hidden" />
+                                            <Lock className={`w-6 h-6 ${formData.repo_visibility === 'private' ? 'text-blue-400' : 'text-gray-400'}`} />
+                                            <div className="text-center">
+                                                <div className="font-medium">Private</div>
+                                                <div className="text-xs text-gray-400">Only you can see</div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2 text-center">
+                                        {formData.repo_visibility === 'public'
+                                            ? "✅ Recommended! Contributions will show on your profile graph."
+                                            : "⚠️ Contributions in private repos won't show on your public graph."}
+                                    </p>
+                                </div>
+
+                                <button type="button" onClick={handleRepoCheck} disabled={!formData.github_username || !formData.repo_name || loading} className="w-full py-3 rounded-full bg-white text-black font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {loading ? 'Verifying Repository...' : 'Continue'}
+                                </button>
                             </motion.div>
                         )}
 

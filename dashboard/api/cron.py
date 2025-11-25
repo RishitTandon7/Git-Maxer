@@ -1,16 +1,16 @@
 from http.server import BaseHTTPRequestHandler
 import os
 import datetime
+from datetime import datetime as dt
 import pytz
 import hashlib
 from github import Github
 from supabase import create_client, Client
-from utils.content_generator import get_random_content
+from utils.content_generator import get_random_content, get_extension
 
 # Configuration
-# These should be in Vercel Env Vars
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") # MUST use Service Role to bypass RLS for cron
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -22,97 +22,93 @@ class handler(BaseHTTPRequestHandler):
 
             supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
             
-            # 1. Fetch all active users who haven't paused
-            # Note: In a real app, you'd paginate this.
+            # 1. Fetch active users
             response = supabase.table("user_settings").select("*").eq("pause_bot", False).execute()
             users = response.data
             
             logs = []
 
-            for user_setting in users:
-                username = user_setting.get("github_username")
-                user_id = user_setting.get("id")
-                min_contributions = user_setting.get("min_contributions", 1)
-                
-                # TODO: Handle custom timezone/deadline per user. 
-                # For now, defaulting to IST as per original request.
-                IST = pytz.timezone('Asia/Kolkata')
-                now_ist = datetime.datetime.now(IST)
-                today_start = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
-
-                # 2. Check GitHub Contributions
-                # We need a GitHub Token. Ideally, stored in DB or user auth provider.
-                # For this MVP, we are still using the single env var GITHUB_TOKEN 
-                # assuming the bot commits on behalf of itself (or the user if it's a PAT).
-                # If this is a SaaS, we'd need the USER'S OAuth token.
-                # For now, falling back to the global GITHUB_TOKEN for the single user.
-                
-                github_token = os.environ.get("GITHUB_TOKEN")
-                repo_name = "RishitTandon7/random_repo" # Hardcoded for now, or fetch from DB if we add a column
-                
-                if not github_token:
-                    logs.append("Skipping: Missing GITHUB_TOKEN")
-                    continue
-
-                g = Github(github_token)
-                gh_user = g.get_user(username)
-                
-                has_contributed = False
-                contribution_count = 0
-                
-                # Check events
-                for event in gh_user.get_events():
-                    event_date = event.created_at.replace(tzinfo=pytz.utc).astimezone(IST)
-                    if event_date < today_start:
-                        break
-                    if event_date.date() == now_ist.date():
-                        contribution_count += 1
-                
-                if contribution_count >= min_contributions:
-                    logs.append(f"User {username}: Already has {contribution_count} contributions.")
-                    continue
-
-                # 3. Generate Content
-                gemini_key = os.environ.get("GEMINI_API_KEY")
-                content = get_random_content(gemini_key)
-                
-                # 4. Check Uniqueness (History)
-                content_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
-                
-                # Check if this hash exists for this user
-                history_check = supabase.table("generated_history").select("id").eq("user_id", user_id).eq("content_hash", content_hash).execute()
-                
-                if history_check.data:
-                    # Duplicate found! Retry once (simple retry logic)
-                    content = get_random_content(gemini_key)
-                    content_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
-                
-                # 5. Commit to GitHub
-                repo = g.get_repo(repo_name)
-                file_path = "daily_content.txt"
-                commit_message = f"Daily contribution: {now_ist.strftime('%Y-%m-%d')}"
-                
+            for user in users:
                 try:
+                    # Get user settings
+                    github_username = user['github_username']
+                    repo_name = user.get('repo_name', 'auto-contributions')
+                    repo_visibility = user.get('repo_visibility', 'public')
+                    full_repo_name = f"{github_username}/{repo_name}"
+                    
+                    logs.append(f"Processing user {user['user_id']} for repo {full_repo_name}")
+
+                    # Initialize Github
+                    g = Github(os.getenv("GITHUB_ACCESS_TOKEN"))
+                    
+                    # Check if repo exists, create if not
                     try:
-                        file_contents = repo.get_contents(file_path)
-                        repo.update_file(file_path, commit_message, content, file_contents.sha)
-                        action = "Updated"
-                    except:
-                        repo.create_file(file_path, commit_message, content)
-                        action = "Created"
+                        repo = g.get_repo(full_repo_name)
+                        logs.append(f"Repository {full_repo_name} exists")
+                    except Exception:
+                        logs.append(f"Repository {full_repo_name} not found, creating...")
+                        try:
+                            user_obj = g.get_user()
+                            private = (repo_visibility == 'private')
+                            repo = user_obj.create_repo(
+                                repo_name,
+                                private=private,
+                                description="Auto-generated contributions by GitMaxer",
+                                auto_init=True
+                            )
+                            logs.append(f"Created repository {full_repo_name}")
+                        except Exception as create_error:
+                            logs.append(f"Failed to create repository: {create_error}")
+                            continue
+
+                    # Check contributions
+                    # Defaulting to IST
+                    IST = pytz.timezone('Asia/Kolkata')
+                    now_ist = dt.now(IST)
+                    today_start = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
                     
-                    # 6. Log to DB
-                    supabase.table("generated_history").insert({
-                        "user_id": user_id,
-                        "content_snippet": content[:50],
-                        "content_hash": content_hash,
-                        "language": "Unknown" # Generator doesn't return lang yet, can parse later
-                    }).execute()
+                    commits = repo.get_commits(since=today_start)
+                    commit_count = commits.totalCount
+
+                    if commit_count >= user['min_contributions']:
+                        logs.append(f"User {user['user_id']} has enough contributions ({commit_count})")
+                        continue
+
+                    # Generate content
+                    prompt = f"Write a short, meaningful code snippet or documentation update in {user['preferred_language']}. It should be valid code or text."
+                    # Assuming generate_content is available from utils
+                    # We need to pass the API key if get_random_content expects it, 
+                    # or if we are using a different generator function.
+                    # The previous code used get_random_content(gemini_key)
+                    gemini_key = os.environ.get("GEMINI_API_KEY")
+                    content = get_random_content(gemini_key) 
                     
-                    logs.append(f"User {username}: {action} contribution.")
+                    # Create file
+                    file_name = f"daily_contribution_{now_ist.date()}_{now_ist.strftime('%H%M%S')}.{get_extension(user['preferred_language'])}"
                     
-                except Exception as e:
-                    logs.append(f"User {username}: Error committing - {str(e)}")
+                    try:
+                        repo.create_file(
+                            path=file_name,
+                            message=f"Daily contribution: {now_ist.strftime('%Y-%m-%d')}",
+                            content=content,
+                            branch="main"
+                        )
+                        
+                        # Log success
+                        supabase.table("generated_history").insert({
+                            "user_id": user['user_id'],
+                            "content_snippet": content[:100],
+                            "language": user['preferred_language'],
+                            "repo_name": full_repo_name
+                        }).execute()
+                        
+                        logs.append(f"Successfully committed to {full_repo_name}")
+                        
+                    except Exception as e:
+                        logs.append(f"Failed to commit: {e}")
+                
+                except Exception as user_error:
+                    logs.append(f"Error processing user {user.get('github_username')}: {user_error}")
 
             self.send_response(200)
             self.end_headers()
