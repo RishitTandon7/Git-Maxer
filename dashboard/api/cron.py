@@ -61,7 +61,8 @@ class handler(BaseHTTPRequestHandler):
                             logs.append(f"Failed to create repository: {create_error}")
                             continue
 
-                    # Check contributions
+                    # Check contributions on github
+
                     # Defaulting to IST
                     IST = pytz.timezone('Asia/Kolkata')
                     now_ist = dt.now(IST)
