@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { motion } from 'framer-motion'
 import { Github, Mail, Terminal, Instagram } from 'lucide-react'
@@ -15,7 +15,8 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: provider,
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: provider === 'github' ? 'repo' : undefined,
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     })
@@ -29,39 +30,16 @@ export default function LoginPage() {
       {/* Interactive Star Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#050505] to-[#050505]" />
-        {[...Array(150)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute bg-white rounded-full"
-            initial={{
-              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
-              y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1000),
-              opacity: Math.random() * 0.7 + 0.3,
-              scale: Math.random() * 0.8 + 0.4
-            }}
-            animate={{
-              y: [null, Math.random() * -100],
-              opacity: [null, 0]
-            }}
-            transition={{
-              duration: Math.random() * 10 + 10,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            style={{
-              width: Math.random() * 3 + 1 + 'px',
-              height: Math.random() * 3 + 1 + 'px',
-            }}
-          />
-        ))}
+        {/* Only render stars on client to avoid hydration mismatch */}
+        <ClientStars />
       </div>
 
       {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#050505]/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-bold text-lg sm:text-xl tracking-tight">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-lg flex items-center justify-center text-black">
-              <Terminal size={16} strokeWidth={3} className="sm:w-[18px] sm:h-[18px]" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 relative rounded-xl overflow-hidden">
+              <img src="/logo.jpg" alt="GitMaxer Logo" className="object-cover w-full h-full" />
             </div>
             <span className="hidden xs:inline">GitMaxer</span>
           </Link>
@@ -148,11 +126,12 @@ export default function LoginPage() {
               className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 sm:pt-4 px-4"
             >
               <button
-                onClick={() => alert('GitHub authentication coming soon! Please use Google for now.')}
-                className="h-12 w-full sm:w-auto px-6 sm:px-8 rounded-full bg-white/10 text-gray-400 font-semibold hover:bg-white/15 transition-all active:scale-95 flex items-center justify-center gap-2"
+                onClick={() => handleLogin('github')}
+                disabled={!!loading}
+                className="h-12 w-full sm:w-auto px-6 sm:px-8 rounded-full bg-white/10 text-gray-400 font-semibold hover:bg-white/15 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Github size={20} />
-                <span className="text-sm sm:text-base">Continue with GitHub</span>
+                <span className="text-sm sm:text-base">{loading === 'github' ? 'Connecting...' : 'Continue with GitHub'}</span>
               </button>
               <button
                 onClick={() => handleLogin('google')}
@@ -210,5 +189,45 @@ export default function LoginPage() {
         </p>
       </footer>
     </div>
+  )
+}
+
+function ClientStars() {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
+
+  return (
+    <>
+      {[...Array(150)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute bg-white rounded-full"
+          initial={{
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            opacity: Math.random() * 0.7 + 0.3,
+            scale: Math.random() * 0.8 + 0.4
+          }}
+          animate={{
+            y: [null, Math.random() * -100],
+            opacity: [null, 0]
+          }}
+          transition={{
+            duration: Math.random() * 10 + 10,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          style={{
+            width: Math.random() * 3 + 1 + 'px',
+            height: Math.random() * 3 + 1 + 'px',
+          }}
+        />
+      ))}
+    </>
   )
 }

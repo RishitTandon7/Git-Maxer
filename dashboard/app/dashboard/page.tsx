@@ -179,33 +179,7 @@ export default function Dashboard() {
 
             {/* Background */}
             <div className="fixed inset-0 z-0 pointer-events-none opacity-10">
-                {[...Array(30)].map((_, i) => (
-                    <motion.div
-                        key={i}
-                        className="absolute rounded-sm"
-                        initial={{
-                            x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1200),
-                            y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800),
-                            opacity: 0,
-                            scale: Math.random() * 0.5 + 0.5
-                        }}
-                        animate={{
-                            y: [null, Math.random() * -200],
-                            opacity: [0, Math.random() * 0.7 + 0.3, 0],
-                            scale: [null, Math.random() * 1 + 0.5]
-                        }}
-                        transition={{
-                            duration: Math.random() * 10 + 10,
-                            repeat: Infinity,
-                            ease: "linear"
-                        }}
-                        style={{
-                            width: '12px',
-                            height: '12px',
-                            backgroundColor: ['#0e4429', '#006d32', '#26a641', '#39d353'][Math.floor(Math.random() * 4)]
-                        }}
-                    />
-                ))}
+                <ClientBackground />
             </div>
 
             {/* Content */}
@@ -436,6 +410,61 @@ export default function Dashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* Mobile Nav */}
+            <nav className="lg:hidden fixed top-0 w-full z-40 bg-[#0d1117] border-b border-[#30363d] px-4 h-16 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 relative rounded-lg overflow-hidden">
+                        <img src="/logo.jpg" alt="GitMaxer Logo" className="object-cover w-full h-full" />
+                    </div>
+                    <span className="font-bold text-lg text-[#c9d1d9]">GitMaxer</span>
+                </div>
+                <button onClick={toggleBot} className="p-2 rounded-lg bg-[#21262d] text-[#c9d1d9]">
+                    <Activity size={20} className={config.pause_bot ? "text-[#f85149]" : "text-[#3fb950]"} />
+                </button>
+            </nav>
         </div>
+    )
+}
+
+function ClientBackground() {
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!mounted) return null
+
+    return (
+        <>
+            {[...Array(30)].map((_, i) => (
+                <motion.div
+                    key={i}
+                    className="absolute rounded-sm"
+                    initial={{
+                        x: Math.random() * window.innerWidth,
+                        y: Math.random() * window.innerHeight,
+                        opacity: 0,
+                        scale: Math.random() * 0.5 + 0.5
+                    }}
+                    animate={{
+                        y: [null, Math.random() * -200],
+                        opacity: [0, Math.random() * 0.7 + 0.3, 0],
+                        scale: [null, Math.random() * 1 + 0.5]
+                    }}
+                    transition={{
+                        duration: Math.random() * 10 + 10,
+                        repeat: Infinity,
+                        ease: "linear"
+                    }}
+                    style={{
+                        width: '12px',
+                        height: '12px',
+                        backgroundColor: ['#0e4429', '#006d32', '#26a641', '#39d353'][Math.floor(Math.random() * 4)]
+                    }}
+                />
+            ))}
+        </>
     )
 }

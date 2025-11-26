@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
     try {
-        const { repo_name, visibility, github_username } = await request.json()
-        const token = process.env.GITHUB_ACCESS_TOKEN
+        const { repo_name, visibility, github_username, github_token } = await request.json()
+        // Use provided token or fallback to env var (legacy)
+        const token = github_token || process.env.GITHUB_ACCESS_TOKEN
 
         if (!token) {
-            return NextResponse.json({ error: 'Server configuration error: Missing GitHub Token' }, { status: 500 })
+            return NextResponse.json({ error: 'Missing GitHub Token. Please try signing in again.' }, { status: 401 })
         }
 
         // 1. Check if repo exists

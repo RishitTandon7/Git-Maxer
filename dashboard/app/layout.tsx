@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "GitMaxer - Automate Your Contributions",
   description: "Keep your GitHub streak alive with AI-generated contributions.",
+  icons: {
+    icon: '/logo.jpg',
+  },
 };
 
 export default function RootLayout({

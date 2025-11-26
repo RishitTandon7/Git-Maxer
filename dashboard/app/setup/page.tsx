@@ -28,9 +28,15 @@ export default function SetupPage() {
     }, [])
 
     const checkAuth = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
             router.push('/')
+            return
+        }
+
+        // Auto-fill username from metadata if available
+        if (session.user.user_metadata.user_name) {
+            setFormData(prev => ({ ...prev, github_username: session.user.user_metadata.user_name }))
         }
     }
 
@@ -39,18 +45,19 @@ export default function SetupPage() {
         setLoading(true)
 
         try {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) return
 
             const { data: existingSettings } = await supabase
                 .from('user_settings')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', session.user.id)
                 .single()
 
             const settingsData = {
-                user_id: user.id,
+                user_id: session.user.id,
                 github_username: formData.github_username,
+                github_access_token: session.provider_token, // Capture the OAuth token
                 repo_name: formData.repo_name,
                 repo_visibility: formData.repo_visibility,
                 preferred_language: formData.preferred_language,
@@ -65,7 +72,7 @@ export default function SetupPage() {
                 const result = await supabase
                     .from('user_settings')
                     .update(settingsData)
-                    .eq('user_id', user.id)
+                    .eq('user_id', session.user.id)
                 error = result.error
             } else {
                 const result = await supabase
@@ -93,13 +100,16 @@ export default function SetupPage() {
 
         setLoading(true)
         try {
+            const { data: { session } } = await supabase.auth.getSession()
+
             const response = await fetch('/api/setup-repo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     repo_name: formData.repo_name,
                     visibility: formData.repo_visibility,
-                    github_username: formData.github_username
+                    github_username: formData.github_username,
+                    github_token: session?.provider_token // Pass the token
                 })
             })
 
@@ -141,8 +151,8 @@ export default function SetupPage() {
             <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#050505]/80 backdrop-blur-md">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight">
-                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-black">
-                            <Terminal size={18} strokeWidth={3} />
+                        <div className="w-8 h-8 relative rounded-lg overflow-hidden">
+                            <img src="/logo.jpg" alt="GitMaxer Logo" className="object-cover w-full h-full" />
                         </div>
                         GitMaxer
                     </Link>
