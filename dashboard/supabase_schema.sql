@@ -7,6 +7,10 @@ create table public.user_settings (
     id uuid references auth.users not null primary key, -- Linked to Supabase Auth User
     github_username text unique not null,
     github_access_token text, -- Store user's GitHub OAuth token
+    repo_name text,
+    repo_visibility text default 'public',
+    preferred_language text default 'any',
+    commit_time text, -- 'HH:MM' or null for random
     min_contributions int default 1,
     pause_bot boolean default false,
     custom_deadline_hour int default 23, -- Hour in 24h format (IST)

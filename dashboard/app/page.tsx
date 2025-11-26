@@ -5,10 +5,30 @@ import { supabase } from '@/lib/supabase'
 import { motion } from 'framer-motion'
 import { Github, Mail, Terminal, Instagram } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [loading, setLoading] = useState<'github' | 'google' | null>(null)
   const [showSocial, setShowSocial] = useState(false)
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        router.push('/setup')
+      }
+    }
+    checkUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        router.push('/setup')
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [router])
 
   const handleLogin = async (provider: 'github' | 'google') => {
     setLoading(provider)
