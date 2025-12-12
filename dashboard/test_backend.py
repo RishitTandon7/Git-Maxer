@@ -5,6 +5,24 @@ from supabase import create_client
 from datetime import datetime as dt
 import pytz
 from utils.content_generator import get_random_content, get_extension
+import httpx
+
+# Monkeypatch httpx.Client to handle potential version mismatches with 'proxy' arg
+_original_client_init = httpx.Client.__init__
+
+def _patched_client_init(self, *args, **kwargs):
+    try:
+        _original_client_init(self, *args, **kwargs)
+    except TypeError as e:
+        if "proxy" in str(e) and "unexpected keyword argument" in str(e):
+            print(f"Warning: Dropping 'proxy' argument from httpx.Client to fix TypeError: {e}")
+            if 'proxy' in kwargs:
+                del kwargs['proxy']
+            _original_client_init(self, *args, **kwargs)
+        else:
+            raise e
+
+httpx.Client.__init__ = _patched_client_init
 
 # Load env vars
 load_dotenv('.env.local')
@@ -44,14 +62,20 @@ def test_run():
         print(f"Target Repo: {full_repo_name} ({repo_visibility})")
         
         try:
-            g = Github(GITHUB_TOKEN)
+            token = user.get('github_access_token')
+            if not token:
+                print("Skipping: No GitHub Usage Token found in user settings.")
+                continue
+                
+            g = Github(token)
             
             # Check/Create Repo
             try:
                 repo = g.get_repo(full_repo_name)
-                print(f"✅ Repository exists")
-            except Exception:
-                print(f"⚠️ Repository not found, creating...")
+                print(f"Repository exists")
+            except Exception as e:
+                print(f"Repository not found or access denied: {e}")
+                print("Attempting to create...")
                 try:
                     user_obj = g.get_user()
                     private = (repo_visibility == 'private')
@@ -61,9 +85,9 @@ def test_run():
                         description="Auto-generated contributions by GitMaxer",
                         auto_init=True
                     )
-                    print(f"✅ Created repository {full_repo_name}")
-                except Exception as e:
-                    print(f"❌ Failed to create repo: {e}")
+                    print(f"Created repository {full_repo_name}")
+                except Exception as create_e:
+                    print(f"Failed to create repo: {create_e}")
                     continue
 
             # Check contributions
@@ -95,7 +119,7 @@ def test_run():
                 branch="main"
             )
             
-            print("✅ Successfully committed!")
+            print("Successfully committed!")
             
             # Log to DB
             supabase.table("generated_history").insert({
@@ -106,7 +130,7 @@ def test_run():
             }).execute()
             
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     test_run()
