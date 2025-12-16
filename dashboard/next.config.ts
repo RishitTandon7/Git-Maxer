@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Fix for Supabase ESM import issues
+  experimental: {
+    serverComponentsExternalPackages: ['@supabase/supabase-js', '@supabase/ssr'],
+  },
+  // Transpile Supabase packages
+  transpilePackages: ['@supabase/supabase-js', '@supabase/ssr', '@supabase/auth-helpers-nextjs'],
 };
 
 export default nextConfig;
