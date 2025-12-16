@@ -123,7 +123,7 @@ def test_run():
             
             # Log to DB
             supabase.table("generated_history").insert({
-                "user_id": user['user_id'],
+                "user_id": user['id'],
                 "content_snippet": content[:100],
                 "language": user['preferred_language'],
                 "repo_name": full_repo_name

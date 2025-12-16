@@ -36,10 +36,14 @@ class handler(BaseHTTPRequestHandler):
                     repo_visibility = user.get('repo_visibility', 'public')
                     full_repo_name = f"{github_username}/{repo_name}"
                     
-                    logs.append(f"Processing user {user['user_id']} for repo {full_repo_name}")
+                    logs.append(f"Processing user {user['id']} for repo {full_repo_name}")
 
-                    # Initialize Github
-                    g = Github(os.getenv("GITHUB_ACCESS_TOKEN"))
+                    # Initialize Github with user's stored OAuth token
+                    user_token = user.get('github_access_token')
+                    if not user_token:
+                        logs.append(f"Skipping user {user['id']}: No GitHub token found")
+                        continue
+                    g = Github(user_token)
                     
                     # Check if repo exists, create if not
                     try:
@@ -72,7 +76,7 @@ class handler(BaseHTTPRequestHandler):
                     commit_count = commits.totalCount
 
                     if commit_count >= user['min_contributions']:
-                        logs.append(f"User {user['user_id']} has enough contributions ({commit_count})")
+                        logs.append(f"User {user['id']} has enough contributions ({commit_count})")
                         continue
 
                     # Generate content
@@ -97,7 +101,7 @@ class handler(BaseHTTPRequestHandler):
                         
                         # Log success
                         supabase.table("generated_history").insert({
-                            "user_id": user['user_id'],
+                            "user_id": user['id'],
                             "content_snippet": content[:100],
                             "language": user['preferred_language'],
                             "repo_name": full_repo_name

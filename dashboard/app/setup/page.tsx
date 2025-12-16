@@ -51,13 +51,14 @@ export default function SetupPage() {
             const { data: existingSettings } = await supabase
                 .from('user_settings')
                 .select('*')
-                .eq('user_id', session.user.id)
+                .eq('id', session.user.id)
                 .single()
 
-            const settingsData = {
-                user_id: session.user.id,
+            // Build settings data - only include github_access_token if it's actually available
+            // (The token is already stored in the auth callback, so we don't want to overwrite it with null)
+            const settingsData: Record<string, any> = {
+                id: session.user.id,
                 github_username: formData.github_username,
-                github_access_token: session.provider_token, // Capture the OAuth token
                 repo_name: formData.repo_name,
                 repo_visibility: formData.repo_visibility,
                 preferred_language: formData.preferred_language,
@@ -66,13 +67,18 @@ export default function SetupPage() {
                 pause_bot: formData.pause_bot
             }
 
+            // Only update the token if it's available (won't be after page refresh)
+            if (session.provider_token) {
+                settingsData.github_access_token = session.provider_token
+            }
+
             let error
 
             if (existingSettings) {
                 const result = await supabase
                     .from('user_settings')
                     .update(settingsData)
-                    .eq('user_id', session.user.id)
+                    .eq('id', session.user.id)
                 error = result.error
             } else {
                 const result = await supabase
