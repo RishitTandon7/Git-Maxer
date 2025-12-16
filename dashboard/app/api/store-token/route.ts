@@ -52,11 +52,12 @@ export async function POST(request: NextRequest) {
 
         if (existingSettings) {
             // Update existing record
+            const settings = existingSettings as { id: string; github_username: string }
             const { error: updateError } = await serviceClient
                 .from('user_settings')
                 .update({
                     github_access_token: providerToken,
-                    github_username: githubUsername || existingSettings.github_username,
+                    github_username: githubUsername || settings.github_username,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', userId)
