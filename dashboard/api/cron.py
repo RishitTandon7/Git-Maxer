@@ -8,7 +8,8 @@ from github import Github
 from supabase import create_client, Client
 from utils.content_generator import get_random_content, get_extension
 
-# Configuration
+# Configuration ok
+
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
