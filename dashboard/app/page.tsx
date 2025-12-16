@@ -13,13 +13,59 @@ export default function LoginPage() {
   const [showSocial, setShowSocial] = useState(false)
 
   useEffect(() => {
-    const checkUser = async () => {
+    // Handle OAuth tokens from URL hash (implicit flow fallback for Vercel)
+    const handleHashTokens = async () => {
+      const hash = window.location.hash
+      if (hash && hash.includes('access_token')) {
+        // Parse tokens from URL hash
+        const params = new URLSearchParams(hash.substring(1))
+        const providerToken = params.get('provider_token')
+        const accessToken = params.get('access_token')
+
+        if (providerToken && accessToken) {
+          console.log('Found provider_token in URL hash, storing it...')
+
+          // Get the session to get user info
+          const { data: { session } } = await supabase.auth.getSession()
+
+          if (session?.user) {
+            // Store the provider token in the database
+            try {
+              const response = await fetch('/api/store-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: session.user.id,
+                  providerToken: providerToken,
+                  githubUsername: session.user.user_metadata?.user_name || ''
+                })
+              })
+
+              if (response.ok) {
+                console.log('Provider token stored successfully')
+              } else {
+                console.error('Failed to store provider token')
+              }
+            } catch (e) {
+              console.error('Error storing provider token:', e)
+            }
+          }
+
+          // Clear the hash and redirect to setup
+          window.history.replaceState(null, '', '/')
+          router.push('/setup')
+          return
+        }
+      }
+
+      // Normal session check
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
         router.push('/setup')
       }
     }
-    checkUser()
+
+    handleHashTokens()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
