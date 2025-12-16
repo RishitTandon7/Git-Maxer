@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     serverComponentsExternalPackages: ['@supabase/supabase-js', '@supabase/ssr'],
   },
   // Transpile Supabase packages
-  transpilePackages: ['@supabase/supabase-js', '@supabase/ssr', '@supabase/auth-helpers-nextjs'],
+  transpilePackages: ['@supabase/supabase-js', '@supabase/ssr'],
 };
 
 export default nextConfig;
