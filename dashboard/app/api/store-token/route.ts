@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
         // Check if user settings exist
         const { data: existingSettings, error: fetchError } = await serviceClient
             .from('user_settings')
-            .select('id')
+            .select('id, github_username')
             .eq('id', userId)
             .single()
 
