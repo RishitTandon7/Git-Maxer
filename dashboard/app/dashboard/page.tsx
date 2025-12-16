@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Settings, Activity, Power, Save, History, User, Code, Clock, Languages, Check, X, AlertCircle, ChevronDown, Github, Globe } from 'lucide-react'
 
+// Force dynamic rendering to avoid prerendering issues with Supabase
+export const dynamic = 'force-dynamic'
+
 export default function Dashboard() {
     const router = useRouter()
     const [user, setUser] = useState<any>(null)
@@ -69,7 +72,7 @@ export default function Dashboard() {
         const { data: settings } = await supabase
             .from('user_settings')
             .select('*')
-            .eq('user_id', userId)
+            .eq('id', userId)
             .single()
 
         if (!settings || !settings.github_username) {
@@ -118,7 +121,7 @@ export default function Dashboard() {
                 repo_name: config.repo_name,
                 repo_visibility: config.repo_visibility
             })
-            .eq('user_id', user.id)
+            .eq('id', user.id)
 
         if (error) {
             showToast('error', 'Failed to save settings')
