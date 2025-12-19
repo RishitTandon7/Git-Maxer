@@ -291,8 +291,15 @@ export default function SetupPage() {
                                 <div>
                                     <label className="block text-sm font-medium mb-2">
                                         Minimum Daily Contributions: <span className="text-blue-400">{formData.min_contributions}</span>
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max="10"
+                                            value={formData.min_contributions}
+                                            onChange={(e) => setFormData({ ...formData, min_contributions: parseInt(e.target.value) })}
+                                            className="w-full mt-2"
+                                        />
                                     </label>
-                                    <input type="range" min="1" max="10" value={formData.min_contributions} onChange={(e) => setFormData({ ...formData, min_contributions: parseInt(e.target.value) })} className="w-full" />
                                     <div className="flex justify-between text-xs text-gray-500 mt-1">
                                         <span>1</span>
                                         <span>10</span>
