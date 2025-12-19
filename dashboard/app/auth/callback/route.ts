@@ -74,11 +74,11 @@ export async function GET(request: Request) {
 
             if (serviceClient) {
                 try {
-                    // Check if user settings exist (using 'id' as primary key per schema)
+                    // Check if user settings exist (using 'user_id' as foreign key)
                     const { data: existingSettings, error: fetchError } = await serviceClient
                         .from('user_settings')
                         .select('id, github_username')
-                        .eq('id', userId)
+                        .eq('user_id', userId)
                         .single()
 
                     if (fetchError && fetchError.code !== 'PGRST116') {
@@ -95,7 +95,7 @@ export async function GET(request: Request) {
                                 github_username: githubUsername || existingSettings.github_username,
                                 updated_at: new Date().toISOString()
                             })
-                            .eq('id', userId)
+                            .eq('user_id', userId)
 
                         if (updateError) {
                             console.error('Error updating GitHub token:', updateError)
@@ -104,18 +104,19 @@ export async function GET(request: Request) {
                         }
                     } else {
                         // Create new record with the token
+                        // Use upsert to handle potential race conditions
                         const { error: insertError } = await serviceClient
                             .from('user_settings')
-                            .insert({
-                                id: userId, // Primary key is 'id', not 'user_id'
+                            .upsert({
+                                user_id: userId, // Explicitly set user_id
                                 github_access_token: providerToken,
                                 github_username: githubUsername || '',
                                 repo_name: 'auto-contributions',
                                 repo_visibility: 'public',
                                 preferred_language: 'any',
                                 min_contributions: 1,
-                                pause_bot: true // Start paused until setup is complete
-                            })
+                                pause_bot: true
+                            }, { onConflict: 'user_id' })
 
                         if (insertError) {
                             console.error('Error inserting user settings:', insertError)
