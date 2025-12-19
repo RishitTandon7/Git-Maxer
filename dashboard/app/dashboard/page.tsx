@@ -72,7 +72,7 @@ export default function Dashboard() {
         const { data: settings } = await supabase
             .from('user_settings')
             .select('*')
-            .eq('id', userId)
+            .eq('user_id', userId)
             .single()
 
         if (!settings || !settings.github_username) {
@@ -121,7 +121,7 @@ export default function Dashboard() {
                 repo_name: config.repo_name,
                 repo_visibility: config.repo_visibility
             })
-            .eq('id', user.id)
+            .eq('user_id', user.id)
 
         if (error) {
             showToast('error', 'Failed to save settings')
