@@ -48,14 +48,6 @@ export default function SetupPage() {
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) return
 
-            const { data: existingSettings } = await supabase
-                .from('user_settings')
-                .select('*')
-                .eq('id', session.user.id)
-                .single()
-
-            // Build settings data - only include github_access_token if it's actually available
-            // (The token is already stored in the auth callback, so we don't want to overwrite it with null)
             const settingsData: Record<string, any> = {
                 id: session.user.id,
                 github_username: formData.github_username,
@@ -67,29 +59,25 @@ export default function SetupPage() {
                 pause_bot: formData.pause_bot
             }
 
-            // Only update the token if it's available (won't be after page refresh)
+            // Only update the token if it's available
             if (session.provider_token) {
                 settingsData.github_access_token = session.provider_token
             }
 
-            let error
+            // Call the secure API endpoint to save settings
+            // This bypasses RLS restrictions by using a service role key on the server
+            const response = await fetch('/api/save-settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(settingsData),
+            })
 
-            if (existingSettings) {
-                const result = await supabase
-                    .from('user_settings')
-                    .update(settingsData)
-                    .eq('id', session.user.id)
-                error = result.error
-            } else {
-                const result = await supabase
-                    .from('user_settings')
-                    .insert(settingsData)
-                error = result.error
-            }
+            const result = await response.json()
 
-            if (error) {
-                console.error('Database error:', error)
-                throw error
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to save settings')
             }
 
             router.push('/dashboard')
