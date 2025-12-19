@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
         // 2. Validate/Prepare Data
         // Ensure we only touch the authenticated user's data
         const settingsData = {
-            id: user.id, // Force ID to match authenticated user
-            user_id: user.id, // Add explicit user_id for DB compatibility
+            // id: user.id, // REMOVED: Production DB likely uses random UUID for ID, so we shouldn't force it.
+            user_id: user.id, // We conflict on this unique field instead
             github_username: body.github_username,
             repo_name: body.repo_name,
             repo_visibility: body.repo_visibility,
@@ -61,11 +61,7 @@ export async function POST(request: NextRequest) {
             pause_bot: body.pause_bot
         }
 
-        // If a token is provided in the body (e.g. passed from session on client), include it
-        // Note: Ideally we should rely on what's already in DB, but sometimes we need to update it
-        if (body.github_access_token) {
-            (settingsData as any).github_access_token = body.github_access_token
-        }
+        // ... existing code ...
 
         // 3. Perform DB Operation using Service Client
         const serviceClient = getServiceClient()
@@ -74,10 +70,10 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if row exists to decide Upsert vs Update (or just Upsert)
-        // Upsert is easiest
+        // Upsert matches on unique column 'user_id'
         const { error: upsertError } = await serviceClient
             .from('user_settings')
-            .upsert(settingsData)
+            .upsert(settingsData, { onConflict: 'user_id' })
 
         if (upsertError) {
             console.error('Database error saving settings:', upsertError)
