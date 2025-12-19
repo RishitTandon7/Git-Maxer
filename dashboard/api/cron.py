@@ -73,11 +73,43 @@ class handler(BaseHTTPRequestHandler):
                     now_ist = dt.now(IST)
                     today_start = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
                     
+                    # Check Time Preference (New Logic)
+                    commit_time_str = user.get('commit_time')
+                    should_run_now = False
+
+                    if commit_time_str:
+                        try:
+                            # Parse "HH:MM"
+                            target_hour, target_minute = map(int, commit_time_str.split(':'))
+                            target_time = now_ist.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
+                            
+                            # Run if current time is past the target time
+                            # AND we haven't hit the daily limit (checked below)
+                            if now_ist >= target_time:
+                                should_run_now = True
+                            else:
+                                logs.append(f"User {user['github_username']}: Too early ({now_ist.strftime('%H:%M')} < {commit_time_str})")
+                        except ValueError:
+                             logs.append(f"User {user['github_username']}: Invalid time format {commit_time_str}")
+                    else:
+                        # Default behavior for random time: Run nicely around the default deadline (23:45)
+                        # OR if we want random distribution, we'd need a different mechanism. 
+                        # For now, let's keep the original logic: Run whenever cron hits if no time set,
+                        # BUT since cron hits every 15m, this might imply running at 00:00 every day immediately.
+                        # Let's start "random" ones only after 10 AM to appear realistic
+                        if now_ist.hour >= 10:
+                            should_run_now = True
+                        else:
+                            logs.append(f"User {user['github_username']}: Sleeping until 10 AM")
+
+                    if not should_run_now:
+                        continue
+
                     commits = repo.get_commits(since=today_start)
                     commit_count = commits.totalCount
-
+                    
                     if commit_count >= user['min_contributions']:
-                        logs.append(f"User {user['id']} has enough contributions ({commit_count})")
+                        logs.append(f"User {user['github_username']} has enough contributions ({commit_count})")
                         continue
 
                     # Generate content
