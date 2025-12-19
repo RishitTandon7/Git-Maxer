@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
         // Ensure we only touch the authenticated user's data
         const settingsData = {
             id: user.id, // Force ID to match authenticated user
+            user_id: user.id, // Add explicit user_id for DB compatibility
             github_username: body.github_username,
             repo_name: body.repo_name,
             repo_visibility: body.repo_visibility,
