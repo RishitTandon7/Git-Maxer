@@ -4,16 +4,39 @@ import { motion } from 'framer-motion'
 import { Terminal } from 'lucide-react'
 import Link from 'next/link'
 import Script from 'next/script'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function PricingPage() {
     const [loading, setLoading] = useState(false)
+    const [stars, setStars] = useState<any[]>([])
+
+    useEffect(() => {
+        // Generate stars only on client side to avoid hydration mismatch
+        const newStars = [...Array(50)].map(() => ({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            opacity: Math.random() * 0.5 + 0.3,
+            scale: Math.random() * 0.5 + 0.5,
+            duration: Math.random() * 10 + 10,
+            width: Math.random() * 2 + 1 + 'px',
+            height: Math.random() * 2 + 1 + 'px',
+        }))
+        setStars(newStars)
+    }, [])
 
     const handlePayment = async () => {
         setLoading(true)
         try {
             // 1. Create Order
             const res = await fetch('/api/razorpay/order', { method: 'POST' })
+
+            // Check content type to avoid "Unexpected token <" error if 404 HTML is returned
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await res.text();
+                throw new Error(`API Error: Backend not found. Response: ${text.slice(0, 50)}...`);
+            }
+
             const data = await res.json()
 
             if (!res.ok) throw new Error(data.error || 'Failed to create order')
@@ -56,9 +79,9 @@ export default function PricingPage() {
             const paymentObject = new (window as any).Razorpay(options);
             paymentObject.open();
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Payment Error:", error)
-            alert("Payment failed. Please try again.")
+            alert(`Payment failed: ${error.message}`)
         } finally {
             setLoading(false)
         }
@@ -71,28 +94,28 @@ export default function PricingPage() {
             {/* Interactive Star Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#050505] to-[#050505]" />
-                {[...Array(50)].map((_, i) => (
+                {stars.map((star, i) => (
                     <motion.div
                         key={i}
                         className="absolute bg-white rounded-full"
                         initial={{
-                            x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
-                            y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1000),
-                            opacity: Math.random() * 0.5 + 0.3,
-                            scale: Math.random() * 0.5 + 0.5
+                            x: star.x,
+                            y: star.y,
+                            opacity: star.opacity,
+                            scale: star.scale
                         }}
                         animate={{
                             y: [null, Math.random() * -100],
                             opacity: [null, 0]
                         }}
                         transition={{
-                            duration: Math.random() * 10 + 10,
+                            duration: star.duration,
                             repeat: Infinity,
                             ease: "linear"
                         }}
                         style={{
-                            width: Math.random() * 2 + 1 + 'px',
-                            height: Math.random() * 2 + 1 + 'px',
+                            width: star.width,
+                            height: star.height,
                         }}
                     />
                 ))}
