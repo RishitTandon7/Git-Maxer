@@ -187,7 +187,7 @@ export default function PricingPage() {
                             </div>
                             <ul className="space-y-3 text-sm text-white">
                                 <li className="flex items-center gap-2"><span className="text-purple-400">⚡</span> <b>Project Mode (15 Days)</b></li>
-                                <li className="flex items-center gap-2">Give a prompt -> Bot finishes it</li>
+                                <li className="flex items-center gap-2">Give a prompt → Bot finishes it</li>
                                 <li className="flex items-center gap-2"><span className="text-blue-400">★</span> <b>Enterprise Badge</b></li>
                                 <li className="flex items-center gap-2"><span className="text-green-400">✓</span> All Pro Features</li>
                             </ul>
