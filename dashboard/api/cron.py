@@ -142,8 +142,8 @@ class handler(BaseHTTPRequestHandler):
                     plan = user.get('plan_type', 'free')
                     is_owner = username == 'rishittandon7'
                     
-                    # If Owner, force high target (Maximum Contributions)
-                    target_contributions = 100 if is_owner else user['min_contributions']
+                    # If Owner, allow them to set high targets (handled in UI) but respect their setting here
+                    target_contributions = user['min_contributions']
                     
                     if commit_count >= target_contributions:
                         logs.append(f"User {user['github_username']} has enough contributions ({commit_count})")

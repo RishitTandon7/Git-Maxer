@@ -298,6 +298,31 @@ export default function Dashboard() {
                                     <p className="text-xs text-[#8b949e] mt-1.5">Leave empty for random time each day</p>
                                 </div>
 
+                                {/* Daily Commits Slider */}
+                                <div>
+                                    <label className="text-sm text-[#8b949e] font-medium mb-3 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Code className="w-4 h-4" />
+                                            Daily Commits
+                                        </div>
+                                        <span className="text-[#c9d1d9] font-bold bg-[#21262d] px-2 py-0.5 rounded text-xs">
+                                            {config.min_contributions} / day
+                                        </span>
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max={user?.user_metadata?.user_name === 'rishittandon7' ? "50" : "10"}
+                                        value={config.min_contributions}
+                                        onChange={(e) => setConfig(prev => ({ ...prev, min_contributions: parseInt(e.target.value) }))}
+                                        className="w-full h-2 bg-[#21262d] rounded-lg appearance-none cursor-pointer accent-[#2ea043]"
+                                    />
+                                    <div className="flex justify-between text-[10px] text-[#8b949e] mt-2 font-mono">
+                                        <span>1</span>
+                                        <span>{user?.user_metadata?.user_name === 'rishittandon7' ? "50" : "10"}</span>
+                                    </div>
+                                </div>
+
                                 {/* Save */}
                                 <motion.button
                                     onClick={handleSave}
