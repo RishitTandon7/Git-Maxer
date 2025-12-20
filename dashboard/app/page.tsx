@@ -358,7 +358,7 @@ function MatrixRain() {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVXYZABCDEFGHIJKLMNOPQRSTUVXYZABCDEFGHIJKLMNOPQRSTUVXYZABCDEFGHIJKLMNOPQRSTUVXYZABCDEFGHIJKLMNOPQRSTUVXYZABCDEFGHIJKLMNOPQRSTUVXYZ'
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVXYZ0123456789'
     const fontSize = 14
     const columns = canvas.width / fontSize
 
@@ -368,10 +368,12 @@ function MatrixRain() {
     }
 
     const draw = () => {
+      // Lower opacity for trail effect
       ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      ctx.fillStyle = '#0F0'
+      // Bright Green Text
+      ctx.fillStyle = '#00FF41'
       ctx.font = fontSize + 'px monospace'
 
       for (let i = 0; i < drops.length; i++) {
@@ -400,36 +402,40 @@ function MatrixRain() {
     }
   }, [canvas])
 
-  return <canvas ref={setCanvas} className="fixed inset-0 z-0 opacity-20 pointer-events-none" />
+  // Removed opacity-20, made it opacity-60 for better visibility but not overwhelming
+  return <canvas ref={setCanvas} className="fixed inset-0 z-0 opacity-60 pointer-events-none" />
 }
 
 function RoyalTheme() {
   return (
     <div className="absolute inset-0 bg-[#050505] overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-[#050505] to-[#050505]" />
-      {[...Array(20)].map((_, i) => (
+      {/* Richer Gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-600/20 via-[#050505] to-[#050505]" />
+
+      {/* More Particles, Larger Size */}
+      {[...Array(40)].map((_, i) => (
         <motion.div
           key={i}
-          className="absolute bg-amber-500 rounded-full blur-[1px]"
+          className="absolute bg-amber-400 rounded-full blur-[1px]"
           initial={{
-            x: Math.random() * window.innerWidth,
-            y: window.innerHeight + 100,
+            x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
+            y: (typeof window !== 'undefined' ? window.innerHeight : 800) + 100,
             opacity: 0,
           }}
           animate={{
             y: -100,
-            opacity: [0, 0.4, 0],
+            opacity: [0, 0.8, 0], // Higher opacity
           }}
           transition={{
-            duration: Math.random() * 5 + 5,
+            duration: Math.random() * 4 + 4, // Faster
             repeat: Infinity,
             delay: Math.random() * 5,
             ease: "linear",
           }}
           style={{
-            width: Math.random() * 4 + 2 + 'px',
-            height: Math.random() * 4 + 2 + 'px',
-            boxShadow: '0 0 10px rgba(245, 158, 11, 0.5)'
+            width: Math.random() * 6 + 3 + 'px', // Larger
+            height: Math.random() * 6 + 3 + 'px',
+            boxShadow: '0 0 15px rgba(245, 158, 11, 0.8)' // Stronger Glow
           }}
         />
       ))}
