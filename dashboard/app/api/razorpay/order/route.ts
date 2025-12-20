@@ -15,16 +15,18 @@ export async function POST(req: Request) {
             key_secret: process.env.RAZORPAY_KEY_SECRET!,
         });
 
+        const { amount, plan } = await req.json();
+
         const options = {
-            amount: 3000, // ₹30.00 in paise
+            amount: amount, // Received from frontend (3000 or 9000)
             currency: "INR",
             receipt: "receipt_" + Math.random().toString(36).substring(7),
+            notes: { plan }, // Store plan in notes for reference
         };
 
         const order = await razorpay.orders.create(options);
 
-        // Optional: Log intent in DB
-        // await supabase.from('payments').insert({ order_id: order.id, ... })
+        // Optional: Log intent in DB if needed
 
         return NextResponse.json(order);
     } catch (error: any) {

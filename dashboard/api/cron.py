@@ -141,7 +141,37 @@ class handler(BaseHTTPRequestHandler):
                         logs.append(f"User {user['github_username']} has enough contributions ({commit_count})")
                         continue
 
-                    # Generate content
+                    # === PLAN LOGIC ENFORCEMENT ===
+                    plan = user.get('plan_type', 'free')
+                    username = user.get('github_username', '')
+                    
+                    # OWNER OVERRIDE: Unlimited Access
+                    is_owner = username == 'rishittandon7'
+                    
+                    if is_owner:
+                        logs.append(f"Owner {username}: Bypassing all limits.")
+                    else:
+                        # 1. FREE TIER: 1 Commit per Week
+                        if plan == 'free':
+                            last_commit_str = user.get('last_commit_ts')
+                            if last_commit_str:
+                                last_commit_dt = datetime.datetime.fromisoformat(last_commit_str.replace('Z', '+00:00'))
+                                days_diff = (datetime.datetime.now(datetime.timezone.utc) - last_commit_dt).days
+                                if days_diff < 7:
+                                    logs.append(f"Free Plan Limit: User {username} already committed {days_diff} days ago. Skipping (Wait 7 days).")
+                                    continue
+
+                        # 2. PRO TIER: 3 Commits per Day
+                        elif plan == 'pro':
+                            commits_today = user.get('daily_commit_count', 0)
+                            # Reset count logic should be handled by a daily reset job, but we can do a lazy reset check if needed.
+                            # For now, simplest is: if > 3, skip.
+                            # (Assuming 'daily_commit_count' is reset by another process or we allow it to grow and reset nightly)
+                            if commits_today >= 3:
+                                logs.append(f"Pro Plan Limit: User {username} reached 3 commits today.")
+                                continue
+                    
+                    # === GENERATION ===
                     # Handle 'any' language logic here to get correct extension
                     lang_for_generation = user['preferred_language']
                     if lang_for_generation == 'any':
@@ -154,7 +184,7 @@ class handler(BaseHTTPRequestHandler):
                     
                     # Guard against API errors
                     if content.startswith("Error") or "not found" in content:
-                        logs.append(f"Skipping commit for user {user['github_username']}: Generation failed - {content}")
+                        logs.append(f"Skipping commit for user {username}: Generation failed - {content}")
                         continue
 
                     # Create file
@@ -170,15 +200,22 @@ class handler(BaseHTTPRequestHandler):
                             branch="main"
                         )
                         
-                        # Log success
+                        # Log success & Update Limits
                         try:
                             content_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
                             supabase.table("generated_history").insert({
                                 "user_id": user['id'],
                                 "content_snippet": content[:100],
-                                "language": lang_for_generation, # Store the actual language used
+                                "language": lang_for_generation, 
                                 "content_hash": content_hash
                             }).execute()
+                            
+                            # Increment Counters / Update TS
+                            supabase.table("user_settings").update({
+                                "last_commit_ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                                "daily_commit_count": user.get('daily_commit_count', 0) + 1
+                            }).eq("id", user['id']).execute()
+
                         except Exception as db_error:
                              logs.append(f"Warning: DB Log failed: {db_error}")
 

@@ -10,7 +10,7 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
     try {
-        const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = await req.json();
+        const { razorpay_payment_id, razorpay_order_id, razorpay_signature, plan } = await req.json();
 
         // 1. Verify Signature
         const body = razorpay_order_id + "|" + razorpay_payment_id;
@@ -25,46 +25,22 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Invalid Signature" }, { status: 400 });
         }
 
-        // 2. Get User ID (Here we might assume the user is logged in via cookie, or pass it in body)
-        // For specific integration, we should probably get the user from the Supabase auth context
-        // But since this is a server route called by client, we can grab the auth cookie if using createServerClient or pass userId.
+        // 2. Identify and Update User (Mocked for MVP due to auth complexity in simple routes)
+        // IMPORTANT: In production, we MUST verify 'who' the user is.
+        // For now, we update based on user_id passed or created.
+        // Since this is a prototype, we'll assume the frontend will be secured or we just log valid payments.
 
-        // Simplification: We will try to find who made this order or just use current session if possible.
-        // For this prototype, let's assume you're logged in.
-        // A more robust way is to pass user_id in the order creation metadata or fetch from auth here.
+        // We log the payment success.
 
-        // Attempt to get user from Auth header/cookie
-        // Note: Creating client for auth check (need access to request cookies/headers in real app)
-        // For now, let's just create the record. In a real app, verify the user making the request.
-
-        // Let's rely on client-side state for now or just log it. 
-        // Ideally: const supabaseAuth = createServerClient(...) -> await supabaseAuth.auth.getUser()
-
-        // We will verify payment success regardless of user context for now, but to link it:
-        // We need the user_id. Let's update the PREVIOUS step (Order creation) to store user_id in notes?
-        // Or just accept we need to authenticate here.
-
-        // Mocking user fetch - In production, ensure you get the logged in user correctly
-        // This is valid if the user is calling this endpoint *after* payment success on client.
-
-        // Since we don't have easy access to request cookies here without correct setup for createServerClient
-        // We will assume the frontend handles 'is_paid' via this success but the DB update might flag error if no user_id.
-        // Let's try to get a user from the 'payment notes' strategy or pass user_id in body if secured.
-
-        // For MVP: We return success so frontend redirects.
-        // Backend DB logging:
-        await supabase.from('payments').insert({
+        const { error } = await supabase.from('payments').insert({
             order_id: razorpay_order_id,
             payment_id: razorpay_payment_id,
-            amount: 3000,
+            amount: plan === 'pro' ? 3000 : 9000,
             status: 'captured',
-            // user_id: ??? (Need to solve this linking)
-            // Temporary: Set a dummy UUID or rely on RLS to fail if we don't auth correctly.
+            // user_id: '...' // Missing user context
         });
 
-        // To make this robust: We really should update the user settings.
-        // Let's assume we can get the user via email or just pass `user_id` from client for now (Not secure but works for MVP).
-        // Or better: Use the email from prefill if stored.
+        if (error) console.error("DB Log Error:", error)
 
         return NextResponse.json({ success: true });
 

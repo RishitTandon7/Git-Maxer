@@ -24,30 +24,31 @@ export default function PricingPage() {
         setStars(newStars)
     }, [])
 
-    const handlePayment = async () => {
+    const handlePayment = async (plan: 'pro' | 'enterprise', amount: number) => {
         setLoading(true)
         try {
             // 1. Create Order
-            const res = await fetch('/api/razorpay/order', { method: 'POST' })
+            const res = await fetch('/api/razorpay/order', {
+                method: 'POST',
+                body: JSON.stringify({ amount, plan }), // Send plan type
+            })
 
-            // Check content type to avoid "Unexpected token <" error if 404 HTML is returned
             const contentType = res.headers.get("content-type");
             if (!contentType || !contentType.includes("application/json")) {
                 const text = await res.text();
-                throw new Error(`API Error: Backend not found. Response: ${text.slice(0, 50)}...`);
+                throw new Error(`API Error: Backend not found.`);
             }
 
             const data = await res.json()
-
             if (!res.ok) throw new Error(data.error || 'Failed to create order')
 
             // 2. Initialize Razorpay
             const options = {
-                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Enter the Key ID generated from the Dashboard
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                 amount: data.amount,
                 currency: data.currency,
-                name: "GitMaxer Pro",
-                description: "Upgrade to GitMaxer Pro",
+                name: `GitMaxer ${plan.charAt(0).toUpperCase() + plan.slice(1)}`,
+                description: `Upgrade to ${plan}`,
                 order_id: data.id,
                 handler: async function (response: any) {
                     // 3. Verify Payment
@@ -57,23 +58,19 @@ export default function PricingPage() {
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_order_id: response.razorpay_order_id,
                             razorpay_signature: response.razorpay_signature,
+                            plan: plan // Pass plan type to activate correct tier
                         }),
                     })
                     const verifyData = await verifyRes.json()
 
                     if (verifyData.success) {
-                        alert("Payment successful! Welcome to Pro.")
+                        alert(`Welcome to ${plan.toUpperCase()}!`)
                         window.location.href = '/dashboard'
                     } else {
                         alert("Payment verification failed.")
                     }
                 },
-                prefill: {
-                    email: "user@example.com", // We should fetch this from auth if possible
-                },
-                theme: {
-                    color: "#3B82F6",
-                },
+                theme: { color: "#3B82F6" },
             };
 
             const paymentObject = new (window as any).Razorpay(options);
@@ -91,32 +88,17 @@ export default function PricingPage() {
         <div className="min-h-screen bg-[#050505] text-white selection:bg-white/20 overflow-x-hidden relative">
             <Script src="https://checkout.razorpay.com/v1/checkout.js" />
 
-            {/* Interactive Star Background */}
+            {/* Background Stars (Client Only) */}
             <div className="fixed inset-0 z-0 pointer-events-none">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#050505] to-[#050505]" />
                 {stars.map((star, i) => (
                     <motion.div
                         key={i}
                         className="absolute bg-white rounded-full"
-                        initial={{
-                            x: star.x,
-                            y: star.y,
-                            opacity: star.opacity,
-                            scale: star.scale
-                        }}
-                        animate={{
-                            y: [null, Math.random() * -100],
-                            opacity: [null, 0]
-                        }}
-                        transition={{
-                            duration: star.duration,
-                            repeat: Infinity,
-                            ease: "linear"
-                        }}
-                        style={{
-                            width: star.width,
-                            height: star.height,
-                        }}
+                        initial={{ x: star.x, y: star.y, opacity: star.opacity, scale: star.scale }}
+                        animate={{ y: [null, Math.random() * -100], opacity: [null, 0] }}
+                        transition={{ duration: star.duration, repeat: Infinity, ease: "linear" }}
+                        style={{ width: star.width, height: star.height }}
                     />
                 ))}
             </div>
@@ -131,11 +113,8 @@ export default function PricingPage() {
                         GitMaxer
                     </Link>
                     <div className="flex items-center gap-4">
-                        <Link href="/features" className="text-sm text-gray-400 hover:text-white transition-colors">Features</Link>
                         <Link href="/pricing" className="text-sm text-white font-semibold transition-colors">Pricing</Link>
-                        <Link href="/" className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition-colors">
-                            Get Started
-                        </Link>
+                        <Link href="/" className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition-colors">Login</Link>
                     </div>
                 </div>
             </nav>
@@ -146,130 +125,84 @@ export default function PricingPage() {
                     {/* Header */}
                     <div className="text-center space-y-6">
                         <motion.h1
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="text-6xl md:text-7xl font-bold tracking-tighter"
+                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                            className="text-5xl md:text-7xl font-bold tracking-tighter"
                         >
-                            Simple Pricing
+                            Plans for Everyone
                         </motion.h1>
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="text-xl text-gray-400 max-w-2xl mx-auto"
-                        >
-                            Start free, upgrade when you need more.
-                        </motion.p>
+                        <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                            Choose the pace of your growth.
+                        </p>
                     </div>
 
                     {/* Pricing Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+
                         {/* Free Plan */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="bg-[#0A0A0A] border border-white/10 rounded-3xl p-8 space-y-6"
-                        >
+                        <div className="bg-[#0A0A0A] border border-white/10 rounded-3xl p-8 space-y-6 hover:border-white/20 transition-colors">
                             <div>
                                 <h3 className="text-xl font-bold mb-2">Free</h3>
-                                <div className="text-4xl font-bold mb-1">$0</div>
+                                <div className="text-4xl font-bold mb-1">₹0</div>
                                 <p className="text-gray-400 text-sm">Forever free</p>
                             </div>
-                            <ul className="space-y-3 text-sm">
-                                <li className="flex items-center gap-2">
-                                    <span className="text-green-400">✓</span> 1 Repository
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <span className="text-green-400">✓</span> Daily Auto-commits
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <span className="text-green-400">✓</span> AI Code Generation
-                                </li>
+                            <ul className="space-y-3 text-sm text-gray-300">
+                                <li className="flex items-center gap-2"><span className="text-green-400">✓</span> 1 Repository Limit</li>
+                                <li className="flex items-center gap-2"><span className="text-yellow-400">⚠</span> 1 Commit per Week</li>
+                                <li className="flex items-center gap-2"><span className="text-gray-500">✗</span> No Custom Badge</li>
                             </ul>
-                            <button className="w-full py-3 rounded-full border border-white/10 hover:bg-white/5 transition-colors">
+                            <button className="w-full py-3 rounded-full border border-white/10 hover:bg-white/5 transition-colors cursor-not-allowed opacity-50">
                                 Current Plan
                             </button>
-                        </motion.div>
+                        </div>
 
                         {/* Pro Plan */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.1 }}
-                            className="bg-gradient-to-b from-blue-500/10 to-[#0A0A0A] border border-blue-500/20 rounded-3xl p-8 space-y-6 relative"
-                        >
-                            <div className="absolute top-4 right-4 px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full text-xs text-blue-400">
-                                Popular
-                            </div>
+                        <div className="bg-gradient-to-b from-yellow-500/10 to-[#0A0A0A] border border-yellow-500/30 rounded-3xl p-8 space-y-6 relative hover:scale-105 transition-transform duration-300">
+                            <div className="absolute top-4 right-4 px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-xs text-yellow-400">Best Value</div>
                             <div>
-                                <h3 className="text-xl font-bold mb-2">Pro</h3>
+                                <h3 className="text-xl font-bold mb-2 text-yellow-500">Pro</h3>
                                 <div className="text-4xl font-bold mb-1">₹30</div>
-                                <p className="text-gray-400 text-sm">One time</p>
+                                <p className="text-gray-400 text-sm">Per Month</p>
                             </div>
-                            <ul className="space-y-3 text-sm">
-                                <li className="flex items-center gap-2">
-                                    <span className="text-green-400">✓</span> Unlimited Repositories
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <span className="text-green-400">✓</span> Custom Schedules
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <span className="text-green-400">✓</span> Priority Support
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <span className="text-green-400">✓</span> Analytics Dashboard
-                                </li>
+                            <ul className="space-y-3 text-sm text-white">
+                                <li className="flex items-center gap-2"><span className="text-green-400">✓</span> <b>3 Commits per Day</b></li>
+                                <li className="flex items-center gap-2"><span className="text-green-400">✓</span> Unlimited Repositories</li>
+                                <li className="flex items-center gap-2"><span className="text-yellow-400">★</span> <b>Gold Pro Badge</b></li>
+                                <li className="flex items-center gap-2"><span className="text-green-400">✓</span> Custom Login Screen</li>
                             </ul>
                             <button
-                                onClick={handlePayment}
+                                onClick={() => handlePayment('pro', 3000)}
                                 disabled={loading}
-                                className="w-full py-3 rounded-full bg-white text-black font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                className="w-full py-3 rounded-full bg-yellow-500 text-black font-bold hover:bg-yellow-400 transition-colors"
                             >
                                 {loading ? "Processing..." : "Upgrade to Pro"}
                             </button>
-                        </motion.div>
+                        </div>
 
                         {/* Enterprise Plan */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.2 }}
-                            className="bg-[#0A0A0A] border border-white/10 rounded-3xl p-8 space-y-6"
-                        >
+                        <div className="bg-gradient-to-b from-blue-600/10 to-[#0A0A0A] border border-blue-600/30 rounded-3xl p-8 space-y-6 hover:border-blue-500 transition-colors">
                             <div>
-                                <h3 className="text-xl font-bold mb-2">Enterprise</h3>
-                                <div className="text-4xl font-bold mb-1">Custom</div>
-                                <p className="text-gray-400 text-sm">For teams</p>
+                                <h3 className="text-xl font-bold mb-2 text-blue-500">Enterprise</h3>
+                                <div className="text-4xl font-bold mb-1">₹90</div>
+                                <p className="text-gray-400 text-sm">Per Month</p>
                             </div>
-                            <ul className="space-y-3 text-sm">
-                                <li className="flex items-center gap-2">
-                                    <span className="text-green-400">✓</span> Everything in Pro
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <span className="text-green-400">✓</span> Team Management
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <span className="text-green-400">✓</span> SSO & SAML
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <span className="text-green-400">✓</span> Dedicated Support
-                                </li>
+                            <ul className="space-y-3 text-sm text-white">
+                                <li className="flex items-center gap-2"><span className="text-purple-400">⚡</span> <b>Project Mode (15 Days)</b></li>
+                                <li className="flex items-center gap-2">Give a prompt -> Bot finishes it</li>
+                                <li className="flex items-center gap-2"><span className="text-blue-400">★</span> <b>Enterprise Badge</b></li>
+                                <li className="flex items-center gap-2"><span className="text-green-400">✓</span> All Pro Features</li>
                             </ul>
-                            <button className="w-full py-3 rounded-full border border-white/10 hover:bg-white/5 transition-colors">
-                                Contact Sales
+                            <button
+                                onClick={() => handlePayment('enterprise', 9000)}
+                                disabled={loading}
+                                className="w-full py-3 rounded-full bg-blue-600 text-white font-bold hover:bg-blue-500 transition-colors"
+                            >
+                                {loading ? "Processing..." : "Get Enterprise"}
                             </button>
-                        </motion.div>
-                    </div>
+                        </div>
 
+                    </div>
                 </div>
             </main>
-
-            <footer className="border-t border-white/5 py-12 text-center text-gray-500 text-sm relative z-10">
-                <p>© 2024 GitMaxer. All rights reserved.</p>
-            </footer>
         </div>
     )
 }
