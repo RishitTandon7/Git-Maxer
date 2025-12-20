@@ -12,6 +12,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState<'github' | 'google' | null>(null)
   const [showSocial, setShowSocial] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
+  const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'enterprise' | 'owner' | null>(null)
+  const [sessionUser, setSessionUser] = useState<any>(null)
 
   useEffect(() => {
     // Handle OAuth tokens from URL hash (implicit flow fallback for Vercel)
@@ -21,18 +23,26 @@ export default function LoginPage() {
         const params = new URLSearchParams(hash.substring(1))
         const providerToken = params.get('provider_token')
         const accessToken = params.get('access_token')
-
-        if (providerToken && accessToken) {
-          // Token storing logic would go here if needed again
-          // but for now we focus on redirect
-        }
+        // Implicit token handling...
       }
 
       // Normal session check
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        // Redirect to dashboard, let dashboard handle 'setup' check if needed
-        router.push('/dashboard')
+        setSessionUser(session.user)
+        // Fetch Plan to show custom theme
+        const { data: settings } = await supabase
+          .from('user_settings')
+          .select('plan_type')
+          .eq('user_id', session.user.id)
+          .single()
+
+        if (settings?.plan_type) {
+          setUserPlan(settings.plan_type as any)
+        }
+
+        // STOPPED AUTO-REDIRECT
+        setCheckingSession(false)
       } else {
         setCheckingSession(false)
       }
@@ -40,9 +50,18 @@ export default function LoginPage() {
 
     handleHashTokens()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session) {
-        router.push('/dashboard')
+        setSessionUser(session.user)
+        const { data: settings } = await supabase
+          .from('user_settings')
+          .select('plan_type')
+          .eq('user_id', session.user.id)
+          .single()
+        if (settings?.plan_type) setUserPlan(settings.plan_type as any)
+      } else {
+        setSessionUser(null)
+        setUserPlan(null)
       }
     })
 
@@ -77,11 +96,23 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-white/20 overflow-x-hidden relative flex flex-col">
 
-      {/* Interactive Star Background */}
+      {/* Interactive Background based on Plan */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#050505] to-[#050505]" />
-        {/* Only render stars on client to avoid hydration mismatch */}
-        <ClientStars />
+
+        {(userPlan === 'enterprise') ? (
+          <MatrixRain />
+        ) : (userPlan === 'pro' || userPlan === 'owner') ? (
+          <>
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#050505] to-[#050505]" />
+            <ClientStars />
+          </>
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#050505] to-[#050505]" />
+            {/* Default Stars for free/logged out too, or custom green squares? Keeping stars for now as it looks good */}
+            <ClientStars />
+          </>
+        )}
       </div>
 
       {/* Navbar */}
@@ -96,20 +127,36 @@ export default function LoginPage() {
           <div className="flex items-center gap-2 sm:gap-4">
             <Link href="/features" className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors">Features</Link>
             <Link href="/pricing" className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors">Pricing</Link>
-            <button
-              onClick={() => handleLogin('google')}
-              disabled={!!loading}
-              className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => handleLogin('google')}
-              disabled={!!loading}
-              className="bg-white text-black px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold hover:bg-gray-200 transition-colors"
-            >
-              Sign Up
-            </button>
+
+            {sessionUser ? (
+              <Link
+                href="/dashboard"
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all shadow-lg flex items-center gap-2
+                     ${userPlan === 'owner' ? 'bg-amber-500 text-black hover:bg-amber-400 shadow-amber-500/20' :
+                    userPlan === 'enterprise' ? 'bg-green-500 text-black hover:bg-green-400 shadow-green-500/20' :
+                      'bg-white text-black hover:bg-gray-200'}
+                   `}
+              >
+                {userPlan === 'owner' ? '👑 Owner Dashboard' : 'View Dashboard'}
+              </Link>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleLogin('google')}
+                  disabled={!!loading}
+                  className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => handleLogin('google')}
+                  disabled={!!loading}
+                  className="bg-white text-black px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold hover:bg-gray-200 transition-colors"
+                >
+                  Sign Up
+                </button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -277,4 +324,61 @@ function ClientStars() {
       ))}
     </>
   )
+}
+
+function MatrixRain() {
+  const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
+
+  useEffect(() => {
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVXYZABCDEFGHIJKLMNOPQRSTUVXYZABCDEFGHIJKLMNOPQRSTUVXYZABCDEFGHIJKLMNOPQRSTUVXYZABCDEFGHIJKLMNOPQRSTUVXYZABCDEFGHIJKLMNOPQRSTUVXYZ'
+    const fontSize = 14
+    const columns = canvas.width / fontSize
+
+    const drops: number[] = []
+    for (let i = 0; i < columns; i++) {
+      drops[i] = 1
+    }
+
+    const draw = () => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      ctx.fillStyle = '#0F0'
+      ctx.font = fontSize + 'px monospace'
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = letters[Math.floor(Math.random() * letters.length)]
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize)
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0
+        }
+        drops[i]++
+      }
+    }
+
+    const interval = setInterval(draw, 33)
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [canvas])
+
+  return <canvas ref={setCanvas} className="fixed inset-0 z-0 opacity-20 pointer-events-none" />
 }
