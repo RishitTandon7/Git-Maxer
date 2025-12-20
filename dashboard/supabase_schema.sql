@@ -85,7 +85,29 @@ create policy "Users can view their own payments"
 on public.payments for select
 using ( auth.uid() = user_id );
 
--- Update user_settings to include payment status
+-- Update user_settings to include payment status and PLANS
 alter table public.user_settings 
-add column if not exists is_paid boolean default false;
+add column if not exists is_paid boolean default false,
+add column if not exists plan_type text default 'free', -- 'free', 'pro', 'enterprise', 'owner'
+add column if not exists plan_expiry timestamp with time zone,
+add column if not exists daily_commit_count int default 0,
+add column if not exists last_commit_ts timestamp with time zone,
+add column if not exists project_goal text, -- For Enterprise
+add column if not exists project_start_date timestamp with time zone;
+
+-- Table: Invites (For Owner to give free access)
+create table public.invites (
+    code text primary key,
+    plan_type text not null, -- 'pro', 'enterprise'
+    is_used boolean default false,
+    used_by uuid references public.user_settings(id),
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- RLS for Invites
+alter table public.invites enable row level security;
+create policy "Anyone can read invites to redeem"
+on public.invites for select
+using ( true ); -- Loophole needed for public redemption, or secure via API
+
 
