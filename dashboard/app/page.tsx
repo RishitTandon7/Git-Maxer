@@ -11,32 +11,27 @@ export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState<'github' | 'google' | null>(null)
   const [showSocial, setShowSocial] = useState(false)
-  const [checkingSession, setCheckingSession] = useState(true)
+  // We initialize checkingSession to false so we NEVER block the UI
+  // The UI will start as 'logged out' and flip to 'logged in' once the background check finishes.
+  const [checkingSession, setCheckingSession] = useState(false)
   const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'enterprise' | 'owner' | null>(null)
   const [sessionUser, setSessionUser] = useState<any>(null)
 
   useEffect(() => {
     // Handle OAuth tokens from URL hash (implicit flow fallback for Vercel)
     const handleHashTokens = async () => {
+      // ... hash handling ...
       const hash = window.location.hash
       if (hash && hash.includes('access_token')) {
-        const params = new URLSearchParams(hash.substring(1))
-        const providerToken = params.get('provider_token')
-        const accessToken = params.get('access_token')
-        // Implicit token handling...
+        // ...
       }
 
-      // Normal session check
+      // Normal session check - visual only, doesn't block render
       const { data: { session } } = await supabase.auth.getSession()
 
-      // 1. Unblock the UI immediately
       if (session) {
         setSessionUser(session.user)
-      }
-      setCheckingSession(false)
-
-      // 2. Fetch Plan in background (doesn't block UI)
-      if (session) {
+        // Background fetch for Plan
         const { data: settings } = await supabase
           .from('user_settings')
           .select('plan_type')
@@ -52,9 +47,9 @@ export default function LoginPage() {
     handleHashTokens()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // ... existing listener ...
       if (session) {
         setSessionUser(session.user)
-        // Background fetch for theme update
         const { data: settings } = await supabase
           .from('user_settings')
           .select('plan_type')
@@ -84,16 +79,8 @@ export default function LoginPage() {
     setLoading(null)
   }
 
-  if (checkingSession) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-12 h-12 bg-white/10 rounded-xl"></div>
-          <div className="text-gray-500 text-sm">Restoring session...</div>
-        </div>
-      </div>
-    )
-  }
+  // REMOVED BLOCKING LOADING SCREEN
+  // if (checkingSession) return ...
 
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-white/20 overflow-x-hidden relative flex flex-col">
