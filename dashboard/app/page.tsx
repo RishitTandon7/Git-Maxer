@@ -31,6 +31,12 @@ export default function LoginPage() {
 
       if (session) {
         setSessionUser(session.user)
+
+        // INSTANTLY check for owner via metadata (avoid DB delay / flash of free theme)
+        if (session.user.user_metadata?.user_name === 'rishittandon7') {
+          setUserPlan('owner')
+        }
+
         // Background fetch for Plan
         const { data: settings } = await supabase
           .from('user_settings')
@@ -39,7 +45,11 @@ export default function LoginPage() {
           .single()
 
         if (settings?.plan_type) {
-          setUserPlan(settings.plan_type as any)
+          if (session.user.user_metadata?.user_name === 'rishittandon7') {
+            setUserPlan('owner')
+          } else {
+            setUserPlan(settings.plan_type as any)
+          }
         }
       }
     }
