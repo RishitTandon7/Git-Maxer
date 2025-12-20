@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Settings, Activity, Power, Save, History, User, Code, Clock, Languages, Check, X, AlertCircle, ChevronDown, Github, Globe } from 'lucide-react'
+import { OwnerStats } from './OwnerStats'
 
 // Force dynamic rendering to avoid prerendering issues with Supabase
 export const dynamic = 'force-dynamic'
@@ -33,6 +34,16 @@ export default function Dashboard() {
     // Initial data fetch - runs once on mount
     useEffect(() => {
         checkUser()
+
+        // Track View
+        fetch('/api/analytics/track', {
+            method: 'POST',
+            body: JSON.stringify({
+                path: '/dashboard',
+                user_agent: navigator.userAgent,
+                country: Intl.DateTimeFormat().resolvedOptions().timeZone.split('/')[0]
+            })
+        }).catch(() => { })
     }, [])
 
     // Keyboard shortcut - updates when hasUnsavedChanges changes
@@ -187,6 +198,9 @@ export default function Dashboard() {
 
             {/* Content */}
             <div className="relative z-10 max-w-7xl mx-auto p-4 sm:p-6 md:p-8">
+                {/* Owner Analytics (Exclusive) */}
+                {user?.user_metadata?.user_name === 'rishittandon7' && <OwnerStats />}
+
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-6 border-b border-[#21262d]">
                     <div>

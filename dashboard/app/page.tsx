@@ -65,6 +65,25 @@ export default function LoginPage() {
     return () => subscription.unsubscribe()
   }, [router])
 
+  // Analytics Tracking
+  useEffect(() => {
+    const trackView = async () => {
+      try {
+        await fetch('/api/analytics/track', {
+          method: 'POST',
+          body: JSON.stringify({
+            path: window.location.pathname,
+            user_agent: navigator.userAgent,
+            country: Intl.DateTimeFormat().resolvedOptions().timeZone.split('/')[0] // Rough guess
+          })
+        })
+      } catch (e) {
+        // ignore
+      }
+    }
+    trackView()
+  }, [])
+
   const handleLogin = async (provider: 'github' | 'google') => {
     setLoading(provider)
     const { error } = await supabase.auth.signInWithOAuth({
