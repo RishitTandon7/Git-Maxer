@@ -41,7 +41,10 @@ if not SUPABASE_URL or not SUPABASE_KEY:
     print("Error: Missing Supabase credentials")
     exit(1)
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+from supabase.lib.client_options import ClientOptions
+
+options = ClientOptions(postgrest_client_timeout=60)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY, options=options)
 
 def test_run():
     print("Fetching users...")
@@ -121,12 +124,15 @@ def test_run():
             
             print("Successfully committed!")
             
+            import hashlib
+            
             # Log to DB
+            content_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
             supabase.table("generated_history").insert({
                 "user_id": user['id'],
                 "content_snippet": content[:100],
                 "language": user['preferred_language'],
-                "repo_name": full_repo_name
+                "content_hash": content_hash
             }).execute()
             
         except Exception as e:

@@ -21,7 +21,11 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write("Missing Supabase credentials.".encode('utf-8'))
                 return
 
-            supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+            from supabase.lib.client_options import ClientOptions
+
+            # Increase timeout to avoid ReadTimeout
+            options = ClientOptions(postgrest_client_timeout=60)
+            supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY, options=options)
             
             # 1. Fetch active users
             response = supabase.table("user_settings").select("*").eq("pause_bot", False).execute()
@@ -133,11 +137,13 @@ class handler(BaseHTTPRequestHandler):
                         )
                         
                         # Log success
+                        # Log success
+                        content_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
                         supabase.table("generated_history").insert({
                             "user_id": user['id'],
                             "content_snippet": content[:100],
                             "language": user['preferred_language'],
-                            "repo_name": full_repo_name
+                            "content_hash": content_hash
                         }).execute()
                         
                         logs.append(f"Successfully committed to {full_repo_name}")
