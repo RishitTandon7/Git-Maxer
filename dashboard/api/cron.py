@@ -142,16 +142,25 @@ class handler(BaseHTTPRequestHandler):
                         continue
 
                     # Generate content
-                    prompt = f"Write a short, meaningful code snippet or documentation update in {user['preferred_language']}. It should be valid code or text."
-                    # Assuming generate_content is available from utils
-                    # We need to pass the API key if get_random_content expects it, 
-                    # or if we are using a different generator function.
-                    # The previous code used get_random_content(gemini_key)
+                    # Handle 'any' language logic here to get correct extension
+                    lang_for_generation = user['preferred_language']
+                    if lang_for_generation == 'any':
+                         from utils.content_generator import get_random_language
+                         lang_for_generation = get_random_language()
+
                     gemini_key = os.environ.get("GEMINI_API_KEY")
-                    content = get_random_content(gemini_key) 
+                    # Pass the specific language to generator
+                    content = get_random_content(gemini_key, lang_for_generation) 
                     
+                    # Guard against API errors
+                    if content.startswith("Error") or "not found" in content:
+                        logs.append(f"Skipping commit for user {user['github_username']}: Generation failed - {content}")
+                        continue
+
                     # Create file
-                    file_name = f"daily_contribution_{now_ist.date()}_{now_ist.strftime('%H%M%S')}.{get_extension(user['preferred_language'])}"
+                    # Use the specific language for extension, not 'any'
+                    ext = get_extension(lang_for_generation)
+                    file_name = f"daily_contribution_{now_ist.date()}_{now_ist.strftime('%H%M%S')}.{ext}"
                     
                     try:
                         repo.create_file(
@@ -162,15 +171,17 @@ class handler(BaseHTTPRequestHandler):
                         )
                         
                         # Log success
-                        # Log success
-                        content_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
-                        supabase.table("generated_history").insert({
-                            "user_id": user['id'],
-                            "content_snippet": content[:100],
-                            "language": user['preferred_language'],
-                            "content_hash": content_hash
-                        }).execute()
-                        
+                        try:
+                            content_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
+                            supabase.table("generated_history").insert({
+                                "user_id": user['id'],
+                                "content_snippet": content[:100],
+                                "language": lang_for_generation, # Store the actual language used
+                                "content_hash": content_hash
+                            }).execute()
+                        except Exception as db_error:
+                             logs.append(f"Warning: DB Log failed: {db_error}")
+
                         logs.append(f"Successfully committed to {full_repo_name}")
                         
                     except Exception as e:

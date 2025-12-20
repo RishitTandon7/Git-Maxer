@@ -1,20 +1,21 @@
 import google.generativeai as genai
 import random
 
-def get_random_content(api_key):
-    """Returns a random code snippet in ANY language using Gemini API."""
+def get_random_content(api_key, language='any'):
+    """Returns a random code snippet in user defined language using Gemini API."""
     
     if not api_key:
         return "Error: GEMINI_API_KEY not found."
         
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        # Use updated model name
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
-        # Broader prompt for any language and uniqueness
+        prompt_language = language if language != 'any' else "a RANDOM supported programming language"
+
         prompt = (
-            "Generate a unique, interesting, and medium-level code snippet in a RANDOM programming language "
-            "(e.g., Python, Rust, Go, JavaScript, C++, Swift, Kotlin, etc.). "
+            f"Generate a unique, interesting, and medium-level code snippet in {prompt_language}. "
             "Do not repeat common examples like 'Hello World'. "
             "Include a comment at the top stating the language and what the code does. "
             "Provide ONLY the code, no markdown formatting."
@@ -22,7 +23,6 @@ def get_random_content(api_key):
         
         response = model.generate_content(prompt)
         
-        # Clean up potential markdown code blocks
         content = response.text.strip()
         if content.startswith("```"):
             content = content.split("\n", 1)[1]
@@ -54,6 +54,15 @@ def get_extension(language):
         'sql': 'sql',
         'shell': 'sh',
         'bash': 'sh',
-        'any': 'txt'
+        # 'any' logic handled outside or fallback
     }
     return extensions.get(language.lower(), 'txt')
+
+def get_random_language():
+    """Returns a random language key from the supported list."""
+    # List of keys from get_extension map, excluding synonyms if desired, but keys are fine
+    languages = [
+        'python', 'javascript', 'typescript', 'java', 'cpp', 'go', 'rust',
+        'ruby', 'swift', 'kotlin', 'php', 'html', 'css', 'sql', 'bash'
+    ]
+    return random.choice(languages)
