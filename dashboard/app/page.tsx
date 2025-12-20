@@ -11,57 +11,30 @@ export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState<'github' | 'google' | null>(null)
   const [showSocial, setShowSocial] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
 
   useEffect(() => {
     // Handle OAuth tokens from URL hash (implicit flow fallback for Vercel)
     const handleHashTokens = async () => {
       const hash = window.location.hash
       if (hash && hash.includes('access_token')) {
-        // Parse tokens from URL hash
         const params = new URLSearchParams(hash.substring(1))
         const providerToken = params.get('provider_token')
         const accessToken = params.get('access_token')
 
         if (providerToken && accessToken) {
-          console.log('Found provider_token in URL hash, storing it...')
-
-          // Get the session to get user info
-          const { data: { session } } = await supabase.auth.getSession()
-
-          if (session?.user) {
-            // Store the provider token in the database
-            try {
-              const response = await fetch('/api/store-token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  userId: session.user.id,
-                  providerToken: providerToken,
-                  githubUsername: session.user.user_metadata?.user_name || ''
-                })
-              })
-
-              if (response.ok) {
-                console.log('Provider token stored successfully')
-              } else {
-                console.error('Failed to store provider token')
-              }
-            } catch (e) {
-              console.error('Error storing provider token:', e)
-            }
-          }
-
-          // Clear the hash and redirect to setup
-          window.history.replaceState(null, '', '/')
-          router.push('/setup')
-          return
+          // Token storing logic would go here if needed again
+          // but for now we focus on redirect
         }
       }
 
       // Normal session check
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        router.push('/setup')
+        // Redirect to dashboard, let dashboard handle 'setup' check if needed
+        router.push('/dashboard')
+      } else {
+        setCheckingSession(false)
       }
     }
 
@@ -69,7 +42,7 @@ export default function LoginPage() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        router.push('/setup')
+        router.push('/dashboard')
       }
     })
 
@@ -88,6 +61,17 @@ export default function LoginPage() {
     })
     if (error) alert(error.message)
     setLoading(null)
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 bg-white/10 rounded-xl"></div>
+          <div className="text-gray-500 text-sm">Restoring session...</div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -209,9 +193,6 @@ export default function LoginPage() {
               </button>
             </motion.div>
           </div>
-
-
-
         </div>
       </main>
 

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
         }
 
         // 1. Check if repo exists
-        const checkRes = await fetch(`https://api.github.com/repos/${github_username}/${repo_name}`, {
+        const checkRes = await fetch(`https://api.github.com/repos/${encodeURIComponent(github_username)}/${encodeURIComponent(repo_name)}`, {
             headers: {
                 'Authorization': `token ${token}`,
                 'Accept': 'application/vnd.github.v3+json'
@@ -48,7 +48,9 @@ export async function POST(request: Request) {
             }
         }
 
-        return NextResponse.json({ error: 'Failed to check repository status' }, { status: checkRes.status })
+        // Return detailed error
+        const errorText = await checkRes.text()
+        return NextResponse.json({ error: `GitHub Error (${checkRes.status}): ${errorText}` }, { status: checkRes.status })
 
     } catch (error: any) {
         console.error('API Error:', error)
