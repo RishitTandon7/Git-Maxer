@@ -137,16 +137,17 @@ class handler(BaseHTTPRequestHandler):
                     commits = repo.get_commits(since=today_start)
                     commit_count = commits.totalCount
                     
-                    if commit_count >= user['min_contributions']:
+                    # OWNER OVERRIDE: Unlimited Access
+                    username = user.get('github_username', '')
+                    plan = user.get('plan_type', 'free')
+                    is_owner = username == 'rishittandon7'
+                    
+                    # If Owner, force high target (Maximum Contributions)
+                    target_contributions = 100 if is_owner else user['min_contributions']
+                    
+                    if commit_count >= target_contributions:
                         logs.append(f"User {user['github_username']} has enough contributions ({commit_count})")
                         continue
-
-                    # === PLAN LOGIC ENFORCEMENT ===
-                    plan = user.get('plan_type', 'free')
-                    username = user.get('github_username', '')
-                    
-                    # OWNER OVERRIDE: Unlimited Access
-                    is_owner = username == 'rishittandon7'
                     
                     if is_owner:
                         logs.append(f"Owner {username}: Bypassing all limits.")
