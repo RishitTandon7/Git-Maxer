@@ -28,9 +28,15 @@ export default function LoginPage() {
 
       // Normal session check
       const { data: { session } } = await supabase.auth.getSession()
+
+      // 1. Unblock the UI immediately
       if (session) {
         setSessionUser(session.user)
-        // Fetch Plan to show custom theme
+      }
+      setCheckingSession(false)
+
+      // 2. Fetch Plan in background (doesn't block UI)
+      if (session) {
         const { data: settings } = await supabase
           .from('user_settings')
           .select('plan_type')
@@ -40,11 +46,6 @@ export default function LoginPage() {
         if (settings?.plan_type) {
           setUserPlan(settings.plan_type as any)
         }
-
-        // STOPPED AUTO-REDIRECT
-        setCheckingSession(false)
-      } else {
-        setCheckingSession(false)
       }
     }
 
@@ -53,6 +54,7 @@ export default function LoginPage() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session) {
         setSessionUser(session.user)
+        // Background fetch for theme update
         const { data: settings } = await supabase
           .from('user_settings')
           .select('plan_type')
@@ -101,15 +103,13 @@ export default function LoginPage() {
 
         {(userPlan === 'enterprise') ? (
           <MatrixRain />
-        ) : (userPlan === 'pro' || userPlan === 'owner') ? (
-          <>
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#050505] to-[#050505]" />
-            <ClientStars />
-          </>
+        ) : (userPlan === 'owner') ? (
+          <RoyalTheme />
+        ) : (userPlan === 'pro') ? (
+          <CyberTheme />
         ) : (
           <>
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#050505] to-[#050505]" />
-            {/* Default Stars for free/logged out too, or custom green squares? Keeping stars for now as it looks good */}
             <ClientStars />
           </>
         )}
@@ -132,12 +132,16 @@ export default function LoginPage() {
               <Link
                 href="/dashboard"
                 className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all shadow-lg flex items-center gap-2
-                     ${userPlan === 'owner' ? 'bg-amber-500 text-black hover:bg-amber-400 shadow-amber-500/20' :
+                     ${userPlan === 'owner' ? 'bg-amber-400 text-black hover:bg-amber-300 shadow-amber-500/50' :
                     userPlan === 'enterprise' ? 'bg-green-500 text-black hover:bg-green-400 shadow-green-500/20' :
-                      'bg-white text-black hover:bg-gray-200'}
+                      userPlan === 'pro' ? 'bg-blue-500 text-white hover:bg-blue-400 shadow-blue-500/30' :
+                        'bg-white text-black hover:bg-gray-200'}
                    `}
               >
-                {userPlan === 'owner' ? '👑 Owner Dashboard' : 'View Dashboard'}
+                {userPlan === 'owner' ? '👑 Owner Dashboard' :
+                  userPlan === 'enterprise' ? 'MATRIX DASHBOARD' :
+                    userPlan === 'pro' ? '⚡ Pro Dashboard' :
+                      'View Dashboard'}
               </Link>
             ) : (
               <>
@@ -381,4 +385,71 @@ function MatrixRain() {
   }, [canvas])
 
   return <canvas ref={setCanvas} className="fixed inset-0 z-0 opacity-20 pointer-events-none" />
+}
+
+function RoyalTheme() {
+  return (
+    <div className="absolute inset-0 bg-[#050505] overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-[#050505] to-[#050505]" />
+      {[...Array(20)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute bg-amber-500 rounded-full blur-[1px]"
+          initial={{
+            x: Math.random() * window.innerWidth,
+            y: window.innerHeight + 100,
+            opacity: 0,
+          }}
+          animate={{
+            y: -100,
+            opacity: [0, 0.4, 0],
+          }}
+          transition={{
+            duration: Math.random() * 5 + 5,
+            repeat: Infinity,
+            delay: Math.random() * 5,
+            ease: "linear",
+          }}
+          style={{
+            width: Math.random() * 4 + 2 + 'px',
+            height: Math.random() * 4 + 2 + 'px',
+            boxShadow: '0 0 10px rgba(245, 158, 11, 0.5)'
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+function CyberTheme() {
+  return (
+    <div className="absolute inset-0 bg-[#050505] overflow-hidden">
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,_#111_1px,_transparent_1px),linear-gradient(to_bottom,_#111_1px,_transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-500/10 via-[#050505] to-[#050505]" />
+      {[...Array(30)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute bg-blue-500 rounded-sm"
+          initial={{
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            opacity: Math.random() * 0.5 + 0.2,
+          }}
+          animate={{
+            y: [null, Math.random() * 100], // Floating effect
+            opacity: [0.2, 0.8, 0.2],
+          }}
+          transition={{
+            duration: Math.random() * 3 + 2,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          style={{
+            width: Math.random() * 2 + 1 + 'px',
+            height: Math.random() * 20 + 5 + 'px', // Cyber rain lines
+          }}
+        />
+      ))}
+    </div>
+  )
 }
