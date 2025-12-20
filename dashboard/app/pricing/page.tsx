@@ -5,12 +5,38 @@ import { Terminal } from 'lucide-react'
 import Link from 'next/link'
 import Script from 'next/script'
 import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
 export default function PricingPage() {
     const [loading, setLoading] = useState(false)
     const [stars, setStars] = useState<any[]>([])
+    const [sessionUser, setSessionUser] = useState<any>(null)
+    const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'enterprise' | 'owner' | null>(null)
 
     useEffect(() => {
+        // Check Session & Owner status
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+                setSessionUser(session.user)
+                // Instant Owner Check
+                if (session.user.user_metadata?.user_name === 'rishittandon7') {
+                    setUserPlan('owner')
+                }
+
+                const { data: settings } = await supabase
+                    .from('user_settings')
+                    .select('plan_type')
+                    .eq('user_id', session.user.id)
+                    .single()
+
+                if (settings?.plan_type && session.user.user_metadata?.user_name !== 'rishittandon7') {
+                    setUserPlan(settings.plan_type as any)
+                }
+            }
+        }
+        checkSession()
+
         // Generate stars only on client side to avoid hydration mismatch
         const newStars = [...Array(50)].map(() => ({
             x: Math.random() * window.innerWidth,
@@ -114,7 +140,21 @@ export default function PricingPage() {
                     </Link>
                     <div className="flex items-center gap-4">
                         <Link href="/pricing" className="text-sm text-white font-semibold transition-colors">Pricing</Link>
-                        <Link href="/" className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition-colors">Login</Link>
+                        {sessionUser ? (
+                            <Link
+                                href="/dashboard"
+                                className={`px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all shadow-lg flex items-center gap-2
+                                     ${userPlan === 'owner' ? 'bg-amber-400 text-black hover:bg-amber-300 shadow-amber-500/50' :
+                                        userPlan === 'enterprise' ? 'bg-green-500 text-black hover:bg-green-400 shadow-green-500/20' :
+                                            userPlan === 'pro' ? 'bg-blue-500 text-white hover:bg-blue-400 shadow-blue-500/30' :
+                                                'bg-white text-black hover:bg-gray-200'}
+                                   `}
+                            >
+                                {userPlan === 'owner' ? '👑 Dashboard' : 'View Dashboard'}
+                            </Link>
+                        ) : (
+                            <Link href="/" className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold hover:bg-gray-200 transition-colors">Login</Link>
+                        )}
                     </div>
                 </div>
             </nav>
