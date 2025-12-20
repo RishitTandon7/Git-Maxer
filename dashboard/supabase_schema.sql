@@ -65,3 +65,27 @@ $$ language plpgsql security definer;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Table: Payments
+-- Stores Razorpay payment records
+create table public.payments (
+    id uuid default uuid_generate_v4() primary key,
+    user_id uuid references public.user_settings(id) not null,
+    order_id text not null,
+    payment_id text,
+    amount int not null, -- in paise (e.g., 3000 for ₹30.00)
+    status text default 'created', -- 'created', 'captured', 'failed'
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Check policy for payments (Admin only or User view own)
+alter table public.payments enable row level security;
+
+create policy "Users can view their own payments"
+on public.payments for select
+using ( auth.uid() = user_id );
+
+-- Update user_settings to include payment status
+alter table public.user_settings 
+add column if not exists is_paid boolean default false;
+

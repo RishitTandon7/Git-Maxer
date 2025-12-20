@@ -3,10 +3,70 @@
 import { motion } from 'framer-motion'
 import { Terminal } from 'lucide-react'
 import Link from 'next/link'
+import Script from 'next/script'
+import { useState } from 'react'
 
 export default function PricingPage() {
+    const [loading, setLoading] = useState(false)
+
+    const handlePayment = async () => {
+        setLoading(true)
+        try {
+            // 1. Create Order
+            const res = await fetch('/api/razorpay/order', { method: 'POST' })
+            const data = await res.json()
+
+            if (!res.ok) throw new Error(data.error || 'Failed to create order')
+
+            // 2. Initialize Razorpay
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Enter the Key ID generated from the Dashboard
+                amount: data.amount,
+                currency: data.currency,
+                name: "GitMaxer Pro",
+                description: "Upgrade to GitMaxer Pro",
+                order_id: data.id,
+                handler: async function (response: any) {
+                    // 3. Verify Payment
+                    const verifyRes = await fetch('/api/razorpay/verify', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_signature: response.razorpay_signature,
+                        }),
+                    })
+                    const verifyData = await verifyRes.json()
+
+                    if (verifyData.success) {
+                        alert("Payment successful! Welcome to Pro.")
+                        window.location.href = '/dashboard'
+                    } else {
+                        alert("Payment verification failed.")
+                    }
+                },
+                prefill: {
+                    email: "user@example.com", // We should fetch this from auth if possible
+                },
+                theme: {
+                    color: "#3B82F6",
+                },
+            };
+
+            const paymentObject = new (window as any).Razorpay(options);
+            paymentObject.open();
+
+        } catch (error) {
+            console.error("Payment Error:", error)
+            alert("Payment failed. Please try again.")
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return (
         <div className="min-h-screen bg-[#050505] text-white selection:bg-white/20 overflow-x-hidden relative">
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" />
 
             {/* Interactive Star Background */}
             <div className="fixed inset-0 z-0 pointer-events-none">
@@ -122,8 +182,8 @@ export default function PricingPage() {
                             </div>
                             <div>
                                 <h3 className="text-xl font-bold mb-2">Pro</h3>
-                                <div className="text-4xl font-bold mb-1">$9</div>
-                                <p className="text-gray-400 text-sm">per month</p>
+                                <div className="text-4xl font-bold mb-1">₹30</div>
+                                <p className="text-gray-400 text-sm">One time</p>
                             </div>
                             <ul className="space-y-3 text-sm">
                                 <li className="flex items-center gap-2">
@@ -139,8 +199,12 @@ export default function PricingPage() {
                                     <span className="text-green-400">✓</span> Analytics Dashboard
                                 </li>
                             </ul>
-                            <button className="w-full py-3 rounded-full bg-white text-black font-semibold hover:bg-gray-200 transition-colors">
-                                Upgrade to Pro
+                            <button
+                                onClick={handlePayment}
+                                disabled={loading}
+                                className="w-full py-3 rounded-full bg-white text-black font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                            >
+                                {loading ? "Processing..." : "Upgrade to Pro"}
                             </button>
                         </motion.div>
 
