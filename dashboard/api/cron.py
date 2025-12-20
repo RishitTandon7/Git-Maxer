@@ -10,8 +10,33 @@ from utils.content_generator import get_random_content, get_extension
 
 # Configuration ok
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+
+# Add utils to sys.path for Vercel
+import sys
+try:
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+except:
+    pass
+
+import httpx
+# Monkeypatch httpx.Client to handle potential version mismatches with 'proxy' arg
+_original_client_init = httpx.Client.__init__
+
+def _patched_client_init(self, *args, **kwargs):
+    try:
+        _original_client_init(self, *args, **kwargs)
+    except TypeError as e:
+        if "proxy" in str(e) and "unexpected keyword argument" in str(e):
+            # print(f"Warning: Dropping 'proxy' argument from httpx.Client to fix TypeError: {e}")
+            if 'proxy' in kwargs:
+                del kwargs['proxy']
+            _original_client_init(self, *args, **kwargs)
+        else:
+            raise e
+
+httpx.Client.__init__ = _patched_client_init
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
