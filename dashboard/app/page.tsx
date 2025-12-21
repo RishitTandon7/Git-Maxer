@@ -6,73 +6,26 @@ import { motion } from 'framer-motion'
 import { Github, Mail, Terminal, Instagram } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAuth } from './providers/AuthProvider'
 
 export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState<'github' | 'google' | null>(null)
   const [showSocial, setShowSocial] = useState(false)
-  // We initialize checkingSession to false so we NEVER block the UI
-  // The UI will start as 'logged out' and flip to 'logged in' once the background check finishes.
-  const [checkingSession, setCheckingSession] = useState(false)
-  const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'enterprise' | 'owner' | null>(null)
-  const [sessionUser, setSessionUser] = useState<any>(null)
+
+  // Use centralized auth
+  const { user: sessionUser, userPlan, loading: authLoading } = useAuth()
 
   useEffect(() => {
     // Handle OAuth tokens from URL hash (implicit flow fallback for Vercel)
     const handleHashTokens = async () => {
-      // ... hash handling ...
       const hash = window.location.hash
       if (hash && hash.includes('access_token')) {
-        // ...
-      }
-
-      // Normal session check - visual only, doesn't block render
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (session) {
-        setSessionUser(session.user)
-
-        // INSTANTLY check for owner via metadata (avoid DB delay / flash of free theme)
-        if (session.user.user_metadata?.user_name === 'rishittandon7') {
-          setUserPlan('owner')
-        }
-
-        // Background fetch for Plan
-        const { data: settings } = await supabase
-          .from('user_settings')
-          .select('plan_type')
-          .eq('user_id', session.user.id)
-          .single()
-
-        if (settings?.plan_type) {
-          if (session.user.user_metadata?.user_name === 'rishittandon7') {
-            setUserPlan('owner')
-          } else {
-            setUserPlan(settings.plan_type as any)
-          }
-        }
+        // Hash handling logic stays the same
       }
     }
 
     handleHashTokens()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // ... existing listener ...
-      if (session) {
-        setSessionUser(session.user)
-        const { data: settings } = await supabase
-          .from('user_settings')
-          .select('plan_type')
-          .eq('user_id', session.user.id)
-          .single()
-        if (settings?.plan_type) setUserPlan(settings.plan_type as any)
-      } else {
-        setSessionUser(null)
-        setUserPlan(null)
-      }
-    })
-
-    return () => subscription.unsubscribe()
   }, [router])
 
   // Analytics Tracking
@@ -117,18 +70,23 @@ export default function LoginPage() {
       {/* Interactive Background based on Plan */}
       <div className="fixed inset-0 z-0 pointer-events-none">
 
-        {(userPlan === 'enterprise') ? (
-          <MatrixRain />
-        ) : (userPlan === 'owner') ? (
-          <RoyalTheme />
-        ) : (userPlan === 'pro') ? (
-          <CyberTheme />
-        ) : (
-          <>
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#050505] to-[#050505]" />
-            <ClientStars />
-          </>
-        )}
+        {(() => {
+          console.log('🎨 Rendering theme for plan:', userPlan)
+          if (userPlan === 'enterprise') {
+            return <MatrixRain />
+          } else if (userPlan === 'owner') {
+            return <RoyalTheme />
+          } else if (userPlan === 'pro') {
+            return <CyberTheme />
+          } else {
+            return (
+              <>
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#050505] to-[#050505]" />
+                <ClientStars />
+              </>
+            )
+          }
+        })()}
       </div>
 
       {/* Navbar */}

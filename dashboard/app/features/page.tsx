@@ -3,33 +3,11 @@
 import { motion } from 'framer-motion'
 import { Cpu, ShieldCheck, Terminal } from 'lucide-react'
 import Link from 'next/link'
-import { useState, useEffect } from 'react' // Added
-import { supabase } from '@/lib/supabase' // Added
+import { useAuth } from '../providers/AuthProvider'
 
 export default function FeaturesPage() {
-    const [sessionUser, setSessionUser] = useState<any>(null)
-    const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'enterprise' | 'owner' | null>(null)
-
-    useEffect(() => {
-        const checkSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (session) {
-                setSessionUser(session.user)
-                if (session.user.user_metadata?.user_name === 'rishittandon7') setUserPlan('owner')
-
-                const { data: settings } = await supabase
-                    .from('user_settings')
-                    .select('plan_type')
-                    .eq('user_id', session.user.id)
-                    .single()
-
-                if (settings?.plan_type && session.user.user_metadata?.user_name !== 'rishittandon7') {
-                    setUserPlan(settings.plan_type as any)
-                }
-            }
-        }
-        checkSession()
-    }, [])
+    // Use centralized auth
+    const { user: sessionUser, userPlan } = useAuth()
 
     return (
         <div className="min-h-screen bg-[#050505] text-white selection:bg-white/20 overflow-x-hidden relative">
