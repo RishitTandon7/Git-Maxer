@@ -1,6 +1,6 @@
 # 🟩 GitMaxer - GitHub Streak Guardian
 
-![GitMaxer Banner](https://img.shields.io/badge/Status-Active-success?style=for-the-badge) ![Version](https://img.shields.io/badge/Version-2.0-blue?style=for-the-badge) ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+![GitMaxer Banner](https://img.shields.io/badge/Status-Active-success?style=for-the-badge) ![Version](https://img.shields.io/badge/Version-2.0-blue?style=for-the-badge) 
 
 **GitMaxer** is a premium, automated AI assistant designed to keep your GitHub contribution graph active forever. It combines a powerful backend bot with a stunning, high-performance Next.js dashboard featuring dynamic themes, real-time analytics, and role-based access control.
 
