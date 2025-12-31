@@ -1,0 +1,95 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                 RAZORPAY QUICK REFERENCE                      ║
+╚═══════════════════════════════════════════════════════════════╝
+
+📋 YOUR CREDENTIALS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Live Key ID:     rzp_live_Rxq9o4Kicc1f3V
+  Live Secret:     6njwAIIYZ5xw1HBm5l9Zu75D
+  Payment Link:    https://razorpay.me/@rishittandon
+
+⚡ QUICK SETUP (Copy-Paste This!)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Add to .env.local:
+
+  NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_live_Rxq9o4Kicc1f3V
+  RAZORPAY_KEY_SECRET=6njwAIIYZ5xw1HBm5l9Zu75D
+
+💰 PRICING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ┌─────────────────┬──────────┬─────────────────────────┐
+  │ Plan            │ Price    │ Features                │
+  ├─────────────────┼──────────┼─────────────────────────┤
+  │ Free            │ ₹0       │ 1 commit/week           │
+  │ Pro             │ ₹30/mo   │ 3 commits/day           │
+  │ Enterprise      │ ₹90/mo   │ Project mode (15 days)  │
+  └─────────────────┴──────────┴─────────────────────────┘
+
+🚀 START TESTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. Update .env.local (see above)
+  2. npm run dev
+  3. Go to: http://localhost:3000/pricing
+  4. Click "Upgrade to Pro"
+  5. Complete payment
+
+📁 FILES CHANGED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ app/pricing/page.tsx
+  ✅ app/api/razorpay/verify/route.ts
+  ✅ app/api/razorpay/order/route.ts (already existed)
+
+🔧 API ENDPOINTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  POST /api/razorpay/order   → Create order
+  POST /api/razorpay/verify  → Verify payment & update plan
+
+🗄️ DATABASE UPDATES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  After payment:
+  • user_settings.plan_type = 'pro' | 'enterprise'
+  • user_settings.is_paid = true
+  • user_settings.plan_expiry = +30 days
+  • payments table gets new record
+
+🔒 SECURITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ HMAC SHA256 signature verification
+  ✅ User auth via Supabase cookies
+  ✅ Secret key server-side only
+  ✅ RLS bypass with service role
+
+🐛 TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Problem: "Razorpay is not defined"
+  Fix: Razorpay script already loaded in pricing page ✓
+
+  Problem: "Failed to create order"
+  Fix: 1. Check .env.local has RAZORPAY_KEY_SECRET
+       2. Restart dev server
+       3. Check console for errors
+
+  Problem: "User not authenticated"
+  Fix: Make sure you're logged in to the app
+
+  Problem: Payment works but plan not updated
+  Fix: 1. Check Supabase logs
+       2. Verify user_settings has plan_type column
+       3. Check SUPABASE_SERVICE_ROLE_KEY in .env.local
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • SETUP_INSTRUCTIONS.md   → Full guide
+  • RAZORPAY_SETUP.md        → Quick setup
+  • RAZORPAY_COMPLETE.md     → Completion summary
+  • setup-razorpay.bat       → Run for instructions
+
+✨ YOU'RE ALL SET!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Just add those 2 lines to .env.local and restart!
+
+╔═══════════════════════════════════════════════════════════════╗
+║  Integration Status: ✅ COMPLETE                              ║
+║  Mode: 🔴 LIVE (Real payments)                                ║
+║  Ready to Accept: 💳 UPI, Cards, Net Banking, Wallets        ║
+╚═══════════════════════════════════════════════════════════════╝

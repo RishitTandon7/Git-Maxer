@@ -17,6 +17,7 @@ export default function Dashboard() {
     const [saving, setSaving] = useState(false)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
     const [toast, setToast] = useState<{ type: 'success' | 'error', message: string } | null>(null)
+    const [userPlan, setUserPlan] = useState<string>('free') // Track user's plan
 
     const [config, setConfig] = useState({
         min_contributions: 1,
@@ -103,6 +104,9 @@ export default function Dashboard() {
             }
             setConfig(configData)
             setOriginalConfig(configData)
+
+            // Set user plan for custom theming
+            setUserPlan(settings.plan_type || 'free')
         }
 
         const { data: history } = await supabase
@@ -192,24 +196,32 @@ export default function Dashboard() {
             </AnimatePresence>
 
             {/* Background */}
-            <div className="fixed inset-0 z-0 pointer-events-none opacity-10">
-                <ClientBackground />
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <ThemeBackground plan={userPlan} />
             </div>
 
             {/* Content */}
             <div className="relative z-10 max-w-7xl mx-auto p-4 sm:p-6 md:p-8">
                 {/* Owner Analytics (Exclusive) */}
-                {user?.user_metadata?.user_name === 'rishittandon7' && <OwnerStats />}
+                {(userPlan === 'owner' || user?.user_metadata?.user_name === 'rishittandon7') && <OwnerStats />}
 
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-6 border-b border-[#21262d]">
                     <div>
                         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#c9d1d9] flex items-center gap-3">
-                            <Code className="w-7 h-7 sm:w-8 sm:h-8 text-[#58a6ff]" />
+                            <Code className={`w-7 h-7 sm:w-8 sm:h-8 ${userPlan === 'pro' ? 'text-[#EAB308]' : userPlan === 'enterprise' ? 'text-[#3B82F6]' : 'text-[#58a6ff]'}`} />
                             GitMaxer
                         </h1>
                         <p className="text-sm sm:text-base text-[#8b949e] mt-2">
-                            Welcome back, <span className="text-[#58a6ff] font-semibold">@{config.github_username}</span>
+                            Welcome back, <span className={`font-semibold ${userPlan === 'pro' ? 'text-[#EAB308]' : userPlan === 'enterprise' ? 'text-[#3B82F6]' : 'text-[#58a6ff]'}`}>@{config.github_username}</span>
+                            {userPlan !== 'free' && userPlan !== 'owner' && (
+                                <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${userPlan === 'pro' ? 'bg-[#EAB308]/20 text-[#EAB308] border border-[#EAB308]/30' : 'bg-[#3B82F6]/20 text-[#3B82F6] border border-[#3B82F6]/30'}`}>
+                                    {userPlan === 'pro' ? '⭐ PRO' : '💼 ENTERPRISE'}
+                                </span>
+                            )}
+                            {userPlan === 'owner' && (
+                                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-400 border border-amber-400/30">👑 OWNER</span>
+                            )}
                         </p>
                     </div>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -469,7 +481,8 @@ export default function Dashboard() {
     )
 }
 
-function ClientBackground() {
+
+function ThemeBackground({ plan }: { plan: string }) {
     const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
@@ -478,22 +491,26 @@ function ClientBackground() {
 
     if (!mounted) return null
 
+    if (plan === 'owner') return <RoyalTheme />
+    if (plan === 'pro') return <CyberTheme />
+    if (plan === 'enterprise') return <GoldenTheme />
+
+    // Default Green/Dark Theme
     return (
-        <>
-            {[...Array(30)].map((_, i) => (
+        <div className="absolute inset-0 overflow-hidden">
+            {[...Array(20)].map((_, i) => (
                 <motion.div
                     key={i}
                     className="absolute rounded-sm"
                     initial={{
-                        x: Math.random() * window.innerWidth,
-                        y: Math.random() * window.innerHeight,
+                        x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
+                        y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800),
                         opacity: 0,
                         scale: Math.random() * 0.5 + 0.5
                     }}
                     animate={{
                         y: [null, Math.random() * -200],
-                        opacity: [0, Math.random() * 0.7 + 0.3, 0],
-                        scale: [null, Math.random() * 1 + 0.5]
+                        opacity: [0, Math.random() * 0.5 + 0.2, 0],
                     }}
                     transition={{
                         duration: Math.random() * 10 + 10,
@@ -501,12 +518,133 @@ function ClientBackground() {
                         ease: "linear"
                     }}
                     style={{
-                        width: '12px',
-                        height: '12px',
-                        backgroundColor: ['#0e4429', '#006d32', '#26a641', '#39d353'][Math.floor(Math.random() * 4)]
+                        width: '4px',
+                        height: '4px',
+                        backgroundColor: '#238636'
                     }}
                 />
             ))}
-        </>
+        </div>
     )
 }
+
+function RoyalTheme() {
+    return (
+        <div className="absolute inset-0 bg-[#050505] overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-600/20 via-[#050505] to-[#050505]" />
+            {[...Array(30)].map((_, i) => (
+                <motion.div
+                    key={i}
+                    className="absolute bg-red-500 rounded-full blur-[1px]"
+                    initial={{
+                        x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
+                        y: (typeof window !== 'undefined' ? window.innerHeight : 800) + 100,
+                        opacity: 0,
+                    }}
+                    animate={{
+                        y: -100,
+                        opacity: [0, 0.6, 0],
+                    }}
+                    transition={{
+                        duration: Math.random() * 5 + 5,
+                        repeat: Infinity,
+                        delay: Math.random() * 5,
+                        ease: "linear",
+                    }}
+                    style={{
+                        width: Math.random() * 4 + 2 + 'px',
+                        height: Math.random() * 4 + 2 + 'px',
+                        boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)'
+                    }}
+                />
+            ))}
+        </div>
+    )
+}
+
+function CyberTheme() {
+    return (
+        <div className="absolute inset-0 bg-[#000510] overflow-hidden font-mono">
+            {/* Background Gradients */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-cyan-900/30 via-[#000510] to-[#000510]" />
+
+            {/* Animated Moving Grid Floor */}
+            <motion.div
+                className="absolute inset-x-0 bottom-0 h-[60vh] bg-[linear-gradient(to_right,#06b6d4_1px,transparent_1px),linear-gradient(to_bottom,#06b6d4_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:linear-gradient(to_bottom,transparent_10%,black_100%)] opacity-20"
+                style={{ transform: 'perspective(500px) rotateX(60deg)' }}
+                animate={{ backgroundPosition: ['0px 0px', '0px 50px'] }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            />
+
+            {/* Scanlines Overlay */}
+            <div className="absolute inset-0 pointer-events-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSIxIiBmaWxsPSJyZ2JhKDAsIDAsIDAsIDAuMik1Ii8+Cjwvc3ZnPg==')] opacity-30 z-0" />
+
+            {/* Binary Rain Code */}
+            {[...Array(25)].map((_, i) => (
+                <motion.div
+                    key={i}
+                    className="absolute text-cyan-500/30 text-[10px] whitespace-pre flex flex-col items-center leading-none select-none"
+                    initial={{ y: -500, opacity: 0 }}
+                    animate={{ y: 1500, opacity: [0, 1, 0] }}
+                    transition={{ duration: Math.random() * 5 + 3, repeat: Infinity, delay: Math.random() * 5, ease: "linear" }}
+                    style={{ left: `${Math.random() * 100}%` }}
+                >
+                    {'010110'.split('').map((char, j) => <span key={j} style={{ opacity: Math.random() }}>{char}</span>)}
+                </motion.div>
+            ))}
+
+            {/* Floating Hexagons */}
+            {[...Array(6)].map((_, i) => (
+                <motion.div
+                    key={`hex-${i}`}
+                    className="absolute border border-cyan-500/20 bg-cyan-500/5"
+                    initial={{ opacity: 0, rotate: 0 }}
+                    animate={{ opacity: [0, 0.3, 0], rotate: 360, y: [0, -50] }}
+                    transition={{ duration: 15, repeat: Infinity, delay: Math.random() * 5 }}
+                    style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        width: '60px',
+                        height: '60px',
+                        clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
+                    }}
+                />
+            ))}
+        </div>
+    )
+}
+
+function GoldenTheme() {
+    return (
+        <div className="absolute inset-0 bg-[#050505] overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-yellow-600/20 via-[#050505] to-[#050505]" />
+            {[...Array(40)].map((_, i) => (
+                <motion.div
+                    key={i}
+                    className="absolute bg-yellow-400 rounded-full blur-[1px]"
+                    initial={{
+                        x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
+                        y: (typeof window !== 'undefined' ? window.innerHeight : 800) + 100,
+                        opacity: 0,
+                    }}
+                    animate={{
+                        y: -100,
+                        opacity: [0, 0.8, 0],
+                    }}
+                    transition={{
+                        duration: Math.random() * 4 + 4,
+                        repeat: Infinity,
+                        delay: Math.random() * 5,
+                        ease: "linear",
+                    }}
+                    style={{
+                        width: Math.random() * 6 + 3 + 'px',
+                        height: Math.random() * 6 + 3 + 'px',
+                        boxShadow: '0 0 15px rgba(234, 179, 8, 0.8)'
+                    }}
+                />
+            ))}
+        </div>
+    )
+}
+
