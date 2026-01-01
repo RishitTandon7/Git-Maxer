@@ -180,7 +180,7 @@ export default function LoginPage() {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-6 text-sm font-medium"
           >
-            <Link href="/pricing" className="hidden sm:block text-gray-400 hover:text-white transition-colors">Pricing</Link>
+            <Link href="/pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</Link>
             {sessionUser ? (
               <Link href="/dashboard" className={`px-5 py-2 rounded-full font-bold transition-all shadow-lg border ${theme.navbarButton}`}>
                 Dashboard
