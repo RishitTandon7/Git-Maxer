@@ -6,8 +6,8 @@ import { cookies } from 'next/headers';
 
 // Initialize Supabase Admin for updates
 const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder'
 );
 
 
@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
         // 2. Get authenticated user from cookies
         const cookieStore = await cookies();
         const supabaseClient = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder',
             {
                 cookies: {
                     getAll() {
