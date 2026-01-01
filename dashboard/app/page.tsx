@@ -215,6 +215,18 @@ export default function LoginPage() {
               </span>
             </motion.h1>
 
+            {/* Personal Greeting */}
+            {sessionUser && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className={`text-2xl sm:text-3xl font-semibold ${userPlan === 'owner' || sessionUser?.user_metadata?.user_name === 'rishittandon7' ? 'text-red-500' : 'text-gray-200'}`}
+              >
+                {sessionUser?.user_metadata?.user_name === 'rishittandon7' ? 'Hi Boss' : `Hi ${sessionUser?.user_metadata?.user_name || 'there'}`}
+              </motion.div>
+            )}
+
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
