@@ -215,25 +215,19 @@ export default function LoginPage() {
               </span>
             </motion.h1>
 
-            {/* Personal Greeting */}
-            {sessionUser && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-                className={`text-2xl sm:text-3xl font-semibold ${userPlan === 'owner' || sessionUser?.user_metadata?.user_name === 'rishittandon7' ? 'text-red-500' : 'text-gray-200'}`}
-              >
-                {sessionUser?.user_metadata?.user_name === 'rishittandon7' ? 'Hi Boss' : `Hi ${sessionUser?.user_metadata?.user_name || 'there'}`}
-              </motion.div>
-            )}
-
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
               className={`text-lg sm:text-xl max-w-2xl mx-auto font-light leading-relaxed ${userPlan === 'pro' ? 'text-cyan-100/80 drop-shadow-lg' : 'text-gray-400'}`}
             >
-              The <span className={`${theme.subHeadingAccent} font-semibold transition-colors`}>AI Assistant</span> that ensures your GitHub contribution graph never goes gray.
+              {sessionUser?.user_metadata?.user_name === 'rishittandon7' ? (
+                <>Hi Boss, I am your <span className={`${theme.subHeadingAccent} font-semibold transition-colors`}>AI Assistant</span> that ensures your GitHub contribution graph never goes gray.</>
+              ) : sessionUser ? (
+                <>Hi {sessionUser.user_metadata?.user_name}, The <span className={`${theme.subHeadingAccent} font-semibold transition-colors`}>AI Assistant</span> that ensures your GitHub contribution graph never goes gray.</>
+              ) : (
+                <>The <span className={`${theme.subHeadingAccent} font-semibold transition-colors`}>AI Assistant</span> that ensures your GitHub contribution graph never goes gray.</>
+              )}
             </motion.p>
           </div>
 
