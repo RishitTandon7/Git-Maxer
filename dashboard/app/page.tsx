@@ -224,7 +224,7 @@ export default function LoginPage() {
               {sessionUser?.user_metadata?.user_name === 'rishittandon7' ? (
                 <>Hi Boss, I am your <span className={`${theme.subHeadingAccent} font-semibold transition-colors`}>AI Assistant</span> that ensures your GitHub contribution graph never goes gray.</>
               ) : sessionUser ? (
-                <>Hi {sessionUser.user_metadata?.user_name}, The <span className={`${theme.subHeadingAccent} font-semibold transition-colors`}>AI Assistant</span> that ensures your GitHub contribution graph never goes gray.</>
+                <>Hi {sessionUser.user_metadata?.user_name}, I am your <span className={`${theme.subHeadingAccent} font-semibold transition-colors`}>AI Assistant</span> that ensures your GitHub contribution graph never goes gray.</>
               ) : (
                 <>The <span className={`${theme.subHeadingAccent} font-semibold transition-colors`}>AI Assistant</span> that ensures your GitHub contribution graph never goes gray.</>
               )}
