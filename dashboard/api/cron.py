@@ -126,8 +126,8 @@ class handler(BaseHTTPRequestHandler):
                         # OR if we want random distribution, we'd need a different mechanism. 
                         # For now, let's keep the original logic: Run whenever cron hits if no time set,
                         # BUT since cron hits every 15m, this might imply running at 00:00 every day immediately.
-                        # Default behavior: Run after 11 PM IST (23:00) OR Early morning (until 4 AM)
-                        if now_ist.hour >= 23 or now_ist.hour < 4:
+                        # Default behavior: Run after 11 PM IST (23:00) if no time specified
+                        if now_ist.hour >= 23:
                             should_run_now = True
                         else:
                             logs.append(f"User {user['github_username']}: Default schedule - Sleeping until 11 PM IST")
