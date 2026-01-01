@@ -84,43 +84,51 @@ export default function Dashboard() {
     }
 
     const fetchData = async (userId: string) => {
-        const { data: settings } = await supabase
-            .from('user_settings')
-            .select('*')
-            .eq('user_id', userId)
-            .single()
+        try {
+            const { data: settings, error: settingsError } = await supabase
+                .from('user_settings')
+                .select('*')
+                .eq('user_id', userId)
+                .single()
 
-        if (!settings || !settings.github_username) {
-            router.push('/setup')
-            return
-        }
+            if (settingsError) throw settingsError
 
-        if (settings) {
-            const configData = {
-                min_contributions: settings.min_contributions,
-                pause_bot: settings.pause_bot,
-                github_username: settings.github_username,
-                repo_name: settings.repo_name,
-                repo_visibility: settings.repo_visibility,
-                preferred_language: settings.preferred_language || 'any',
-                commit_time: settings.commit_time
+            if (!settings || !settings.github_username) {
+                router.push('/setup')
+                return
             }
-            setConfig(configData)
-            setOriginalConfig(configData)
 
-            // Set user plan for custom theming
-            setUserPlan(settings.plan_type || 'free')
+            if (settings) {
+                const configData = {
+                    min_contributions: settings.min_contributions,
+                    pause_bot: settings.pause_bot,
+                    github_username: settings.github_username,
+                    repo_name: settings.repo_name,
+                    repo_visibility: settings.repo_visibility,
+                    preferred_language: settings.preferred_language || 'any',
+                    commit_time: settings.commit_time
+                }
+                setConfig(configData)
+                setOriginalConfig(configData)
+
+                // Set user plan for custom theming
+                setUserPlan(settings.plan_type || 'free')
+            }
+
+            const { data: history } = await supabase
+                .from('generated_history')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(10)
+
+            if (history) setLogs(history)
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error)
+            showToast('error', 'Failed to load dashboard data. Check console.')
+        } finally {
+            setLoading(false)
         }
-
-        const { data: history } = await supabase
-            .from('generated_history')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(10)
-
-        if (history) setLogs(history)
-        setLoading(false)
     }
 
     const handleSave = async () => {
