@@ -201,7 +201,7 @@ export default function Dashboard() {
             </div>
 
             {/* Content */}
-            <div className="relative z-10 max-w-7xl mx-auto p-4 sm:p-6 md:p-8">
+            <div className="relative z-10 max-w-7xl mx-auto p-4 sm:p-6 md:p-8 pt-24 pb-32">
                 {/* Owner Analytics (Exclusive) */}
                 {(userPlan === 'owner' || user?.user_metadata?.user_name === 'rishittandon7') && <OwnerStats />}
 
