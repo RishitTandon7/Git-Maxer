@@ -247,7 +247,11 @@ export default function Dashboard() {
                             <span className="hidden sm:inline">Home</span>
                         </Link>
                         <button onClick={async () => {
-                            await signOut()
+                            try {
+                                await signOut()
+                            } catch (e) {
+                                console.error("Sign out failed", e)
+                            }
                             router.push('/')
                         }} className="px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium bg-[#21262d] text-[#c9d1d9] border border-[#30363d] hover:bg-[#30363d] hover:border-[#8b949e] transition-all w-full sm:w-auto">
                             Sign Out
