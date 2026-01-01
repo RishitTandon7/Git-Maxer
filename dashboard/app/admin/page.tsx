@@ -14,10 +14,19 @@ export default function AdminPage() {
 
     useEffect(() => {
         // Fetch real stats
-        fetch('/api/admin/stats').then(res => res.json()).then(setStats)
-        const interval = setInterval(() => {
-            fetch('/api/admin/stats').then(res => res.json()).then(setStats)
-        }, 5000)
+        const fetchData = async () => {
+            try {
+                const res = await fetch('/api/admin/stats')
+                if (!res.ok) throw new Error('Failed to fetch')
+                const data = await res.json()
+                setStats(data)
+            } catch (e) {
+                console.error("Admin stats error:", e)
+            }
+        }
+
+        fetchData()
+        const interval = setInterval(fetchData, 5000)
         return () => clearInterval(interval)
     }, [])
 
