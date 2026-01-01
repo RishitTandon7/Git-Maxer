@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, Activity, Power, Save, History, User, Code, Clock, Languages, Check, X, AlertCircle, ChevronDown, Github, Globe } from 'lucide-react'
+import { Settings, Activity, Power, Save, History, User, Code, Clock, Languages, Check, X, AlertCircle, ChevronDown, Github, Globe, Home } from 'lucide-react'
+import Link from 'next/link'
 import { OwnerStats } from './OwnerStats'
 
 // Force dynamic rendering to avoid prerendering issues with Supabase
@@ -231,6 +232,10 @@ export default function Dashboard() {
                                 <span className="hidden sm:inline">Unsaved changes</span>
                             </motion.span>
                         )}
+                        <Link href="/" className="px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium bg-[#21262d] text-[#c9d1d9] border border-[#30363d] hover:bg-[#30363d] hover:border-[#8b949e] transition-all flex items-center justify-center gap-2">
+                            <Home className="w-4 h-4" />
+                            <span className="hidden sm:inline">Home</span>
+                        </Link>
                         <button onClick={() => supabase.auth.signOut().then(() => router.push('/'))} className="px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium bg-[#21262d] text-[#c9d1d9] border border-[#30363d] hover:bg-[#30363d] hover:border-[#8b949e] transition-all w-full sm:w-auto">
                             Sign Out
                         </button>
