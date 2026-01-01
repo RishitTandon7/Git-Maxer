@@ -7,12 +7,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Settings, Activity, Power, Save, History, User, Code, Clock, Languages, Check, X, AlertCircle, ChevronDown, Github, Globe, Home } from 'lucide-react'
 import Link from 'next/link'
 import { OwnerStats } from './OwnerStats'
+import { useAuth } from '../providers/AuthProvider'
 
 // Force dynamic rendering to avoid prerendering issues with Supabase
 export const dynamic = 'force-dynamic'
 
 export default function Dashboard() {
     const router = useRouter()
+    const { signOut } = useAuth()
     const [user, setUser] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -236,7 +238,10 @@ export default function Dashboard() {
                             <Home className="w-4 h-4" />
                             <span className="hidden sm:inline">Home</span>
                         </Link>
-                        <button onClick={() => supabase.auth.signOut().then(() => router.push('/'))} className="px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium bg-[#21262d] text-[#c9d1d9] border border-[#30363d] hover:bg-[#30363d] hover:border-[#8b949e] transition-all w-full sm:w-auto">
+                        <button onClick={async () => {
+                            await signOut()
+                            router.push('/')
+                        }} className="px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium bg-[#21262d] text-[#c9d1d9] border border-[#30363d] hover:bg-[#30363d] hover:border-[#8b949e] transition-all w-full sm:w-auto">
                             Sign Out
                         </button>
                     </div>
