@@ -6,6 +6,9 @@ from http.server import BaseHTTPRequestHandler
 # Add current dir to path
 sys.path.append(os.getcwd())
 
+from dotenv import load_dotenv
+load_dotenv('.env.local')
+
 # Mock request handler helper
 class MockRequest:
     def makefile(self, *args, **kwargs):
