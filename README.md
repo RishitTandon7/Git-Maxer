@@ -90,9 +90,7 @@ Owners get exclusive access to a real-time supervision dashboard:
 
 ---
 
-## 📸 Screenshots
-
-*(Add screenshots of the HyperTech and Admin Dashboards here)*
+Launching soon
 
 ---
 
