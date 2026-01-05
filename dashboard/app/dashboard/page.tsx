@@ -39,11 +39,11 @@ export default function Dashboard() {
     useEffect(() => {
         checkUser()
 
-        // Emergency timeout - force loading off after 8 seconds
+        // Emergency timeout - force loading off after 5 seconds
         const emergencyTimeout = setTimeout(() => {
             console.warn('⏰ EMERGENCY: Dashboard loading timeout - forcing loading OFF')
             setLoading(false)
-        }, 8000)
+        }, 5000)
 
         // Track View
         fetch('/api/analytics/track', {
