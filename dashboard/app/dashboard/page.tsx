@@ -88,7 +88,7 @@ export default function Dashboard() {
             const { data: settings, error: settingsError } = await supabase
                 .from('user_settings')
                 .select('*')
-                .eq('user_id', userId)
+                .eq('id', userId)
                 .single()
 
             if (settingsError) throw settingsError
