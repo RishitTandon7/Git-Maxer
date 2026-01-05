@@ -99,9 +99,22 @@ export default function Dashboard() {
                 .eq('id', userId)
                 .single()
 
-            if (settingsError) throw settingsError
+            console.log('Settings query result:', { settings, settingsError })
+
+            if (settingsError) {
+                // PGRST116 = no rows found (new user, needs setup)
+                if (settingsError.code === 'PGRST116') {
+                    console.log('No settings found, redirecting to setup')
+                    setLoading(false)
+                    router.push('/setup')
+                    return
+                }
+                throw settingsError
+            }
 
             if (!settings || !settings.github_username) {
+                console.log('Settings incomplete, redirecting to setup')
+                setLoading(false)
                 router.push('/setup')
                 return
             }
@@ -133,6 +146,8 @@ export default function Dashboard() {
             if (history) setLogs(history)
         } catch (error) {
             console.error('Error fetching dashboard data:', error)
+            console.error('Error type:', typeof error)
+            console.error('Error keys:', Object.keys(error || {}))
             showToast('error', 'Failed to load dashboard data. Check console.')
         } finally {
             setLoading(false)
