@@ -99,43 +99,45 @@ export default function Dashboard() {
                 .eq('id', userId)
                 .single()
 
-            console.log('Settings query result:', { settings, settingsError })
+            console.log('Settings query result:', { settings, settingsError, userId })
 
-            if (settingsError) {
-                // PGRST116 = no rows found (new user, needs setup)
-                if (settingsError.code === 'PGRST116') {
-                    console.log('No settings found, redirecting to setup')
-                    setLoading(false)
-                    router.push('/setup')
-                    return
-                }
-                throw settingsError
-            }
-
-            if (!settings || !settings.github_username) {
-                console.log('Settings incomplete, redirecting to setup')
+            // ONLY redirect to setup if user is brand new (no database record)
+            if (settingsError?.code === 'PGRST116') {
+                console.log('New user detected (PGRST116), redirecting to setup')
                 setLoading(false)
                 router.push('/setup')
                 return
             }
 
-            if (settings) {
-                const configData = {
-                    min_contributions: settings.min_contributions,
-                    pause_bot: settings.pause_bot,
-                    github_username: settings.github_username,
-                    repo_name: settings.repo_name,
-                    repo_visibility: settings.repo_visibility,
-                    preferred_language: settings.preferred_language || 'any',
-                    commit_time: settings.commit_time
-                }
-                setConfig(configData)
-                setOriginalConfig(configData)
-
-                // Set user plan for custom theming
-                setUserPlan(settings.plan_type || 'free')
+            // For ANY other error, throw it so we can see what's wrong
+            if (settingsError) {
+                console.error('Database error (NOT a new user):', settingsError)
+                throw new Error(`Database query failed: ${settingsError.message || JSON.stringify(settingsError)}`)
             }
 
+            // Check if settings are incomplete (shouldn't happen for existing users)
+            if (!settings || !settings.github_username) {
+                console.warn('User has record but incomplete settings:', settings)
+                setLoading(false)
+                router.push('/setup')
+                return
+            }
+
+            // User has valid settings - load them
+            const configData = {
+                min_contributions: settings.min_contributions,
+                pause_bot: settings.pause_bot,
+                github_username: settings.github_username,
+                repo_name: settings.repo_name,
+                repo_visibility: settings.repo_visibility,
+                preferred_language: settings.preferred_language || 'any',
+                commit_time: settings.commit_time
+            }
+            setConfig(configData)
+            setOriginalConfig(configData)
+            setUserPlan(settings.plan_type || 'free')
+
+            // Load history
             const { data: history } = await supabase
                 .from('generated_history')
                 .select('*')
@@ -144,11 +146,11 @@ export default function Dashboard() {
                 .limit(10)
 
             if (history) setLogs(history)
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching dashboard data:', error)
-            console.error('Error type:', typeof error)
-            console.error('Error keys:', Object.keys(error || {}))
-            showToast('error', 'Failed to load dashboard data. Check console.')
+            console.error('Error message:', error?.message)
+            console.error('Error details:', error)
+            showToast('error', `Failed to load dashboard: ${error?.message || 'Unknown error'}`)
         } finally {
             setLoading(false)
         }
