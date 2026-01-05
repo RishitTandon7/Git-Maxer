@@ -90,7 +90,12 @@ export default function LoginPage() {
     }
   }
 
-  const theme = getTheme(userPlan)
+  // Instant owner detection for theme
+  const effectivePlan = sessionUser?.user_metadata?.user_name === 'rishittandon7'
+    ? 'owner'
+    : userPlan
+
+  const theme = getTheme(effectivePlan)
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
@@ -149,9 +154,9 @@ export default function LoginPage() {
       {/* Dynamic Backgrounds */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         {(() => {
-          if (userPlan === 'enterprise') return <GoldenTheme />
-          if (userPlan === 'owner') return <RoyalTheme />
-          if (userPlan === 'pro') return <HyperTechTheme />
+          if (effectivePlan === 'enterprise') return <GoldenTheme />
+          if (effectivePlan === 'owner') return <RoyalTheme />
+          if (effectivePlan === 'pro') return <HyperTechTheme />
           return (
             <>
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-800/20 via-[#050505] to-[#050505]" />

@@ -74,13 +74,21 @@ export default function Dashboard() {
     }
 
     const checkUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
+        try {
+            const { data: { user }, error } = await supabase.auth.getUser()
+            if (error || !user) {
+                console.error('Auth error:', error)
+                setLoading(false)
+                router.push('/')
+                return
+            }
+            setUser(user)
+            await fetchData(user.id)
+        } catch (error) {
+            console.error('Error in checkUser:', error)
+            setLoading(false)
             router.push('/')
-            return
         }
-        setUser(user)
-        fetchData(user.id)
     }
 
     const fetchData = async (userId: string) => {
