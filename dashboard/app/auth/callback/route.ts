@@ -74,11 +74,11 @@ export async function GET(request: Request) {
 
             if (serviceClient) {
                 try {
-                    // Check if user settings exist (using 'user_id' as foreign key)
+                    // Check if user settings exist (using 'id' as primary key)
                     const { data: existingSettings, error: fetchError } = await serviceClient
                         .from('user_settings')
                         .select('id, github_username')
-                        .eq('user_id', userId)
+                        .eq('id', userId)
                         .single()
 
                     if (fetchError && fetchError.code !== 'PGRST116') {
@@ -95,7 +95,7 @@ export async function GET(request: Request) {
                                 github_username: githubUsername || existingSettings.github_username,
                                 updated_at: new Date().toISOString()
                             })
-                            .eq('user_id', userId)
+                            .eq('id', userId)
 
                         if (updateError) {
                             console.error('Error updating GitHub token:', updateError)

@@ -147,7 +147,7 @@ export default function Dashboard() {
                 repo_name: config.repo_name,
                 repo_visibility: config.repo_visibility
             })
-            .eq('user_id', user.id)
+            .eq('id', user.id)
 
         if (error) {
             showToast('error', 'Failed to save settings')

@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const { data: settings } = await supabase
                         .from('user_settings')
                         .select('plan_type')
-                        .eq('user_id', session.user.id)
+                        .eq('id', session.user.id)
                         .single()
 
                     if (settings?.plan_type) {
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const { data: settings } = await supabase
                         .from('user_settings')
                         .select('plan_type')
-                        .eq('user_id', session.user.id)
+                        .eq('id', session.user.id)
                         .single()
 
                     if (settings?.plan_type) {
