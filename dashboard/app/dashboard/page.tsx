@@ -249,7 +249,7 @@ export default function Dashboard() {
                             GitMaxer
                         </h1>
                         <p className="text-sm sm:text-base text-[#8b949e] mt-2">
-                            Welcome back, <span className={`font-semibold ${userPlan === 'pro' ? 'text-[#EAB308]' : userPlan === 'enterprise' ? 'text-[#3B82F6]' : 'text-[#58a6ff]'}`}>@{config.github_username}</span>
+                            Welcome back, <span className={`font-semibold ${userPlan === 'pro' ? 'text-[#EAB308]' : userPlan === 'enterprise' ? 'text-[#3B82F6]' : 'text-[#58a6ff]'}`}>@{user?.user_metadata?.user_name || config.github_username || 'User'}</span>
                             {userPlan !== 'free' && userPlan !== 'owner' && (
                                 <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${userPlan === 'pro' ? 'bg-[#EAB308]/20 text-[#EAB308] border border-[#EAB308]/30' : 'bg-[#3B82F6]/20 text-[#3B82F6] border border-[#3B82F6]/30'}`}>
                                     {userPlan === 'pro' ? '⭐ PRO' : '💼 ENTERPRISE'}
