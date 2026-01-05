@@ -96,6 +96,10 @@ export default function SetupPage() {
         try {
             const { data: { session } } = await supabase.auth.getSession()
 
+            // Add timeout to prevent infinite loading
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
             const response = await fetch('/api/setup-repo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -103,9 +107,12 @@ export default function SetupPage() {
                     repo_name: formData.repo_name,
                     visibility: formData.repo_visibility,
                     github_username: formData.github_username,
-                    github_token: session?.provider_token // Pass the token
-                })
+                    github_token: session?.provider_token
+                }),
+                signal: controller.signal
             })
+
+            clearTimeout(timeoutId)
 
             const data = await response.json()
 
@@ -118,7 +125,11 @@ export default function SetupPage() {
             setStep(2)
 
         } catch (error: any) {
-            alert(`Error: ${error.message}`)
+            if (error.name === 'AbortError') {
+                alert('Request timed out. Please check your internet connection and try again.')
+            } else {
+                alert(`Error: ${error.message}`)
+            }
         } finally {
             setLoading(false)
         }
