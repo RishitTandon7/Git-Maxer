@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
         // 2. Validate/Prepare Data
         // Ensure we only touch the authenticated user's data
         const settingsData = {
-            // id: user.id, // REMOVED: Production DB likely uses random UUID for ID, so we shouldn't force it.
-            user_id: user.id, // We conflict on this unique field instead
+            id: user.id,          // Primary key - same as auth user id
+            user_id: user.id,     // Foreign key - references auth.users.id
             github_username: body.github_username,
             repo_name: body.repo_name,
             repo_visibility: body.repo_visibility,
@@ -70,10 +70,10 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if row exists to decide Upsert vs Update (or just Upsert)
-        // Upsert matches on unique column 'user_id'
+        // Upsert matches on primary key 'id'
         const { error: upsertError } = await serviceClient
             .from('user_settings')
-            .upsert(settingsData, { onConflict: 'user_id' })
+            .upsert(settingsData, { onConflict: 'id' })
 
         if (upsertError) {
             console.error('Database error saving settings:', upsertError)
