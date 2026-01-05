@@ -39,12 +39,6 @@ export default function Dashboard() {
     useEffect(() => {
         checkUser()
 
-        // Emergency timeout - force loading off after 5 seconds
-        const emergencyTimeout = setTimeout(() => {
-            console.warn('⏰ EMERGENCY: Dashboard loading timeout - forcing loading OFF')
-            setLoading(false)
-        }, 5000)
-
         // Track View
         fetch('/api/analytics/track', {
             method: 'POST',
@@ -54,8 +48,6 @@ export default function Dashboard() {
                 country: Intl.DateTimeFormat().resolvedOptions().timeZone.split('/')[0]
             })
         }).catch(() => { })
-
-        return () => clearTimeout(emergencyTimeout)
     }, [])
 
     // Keyboard shortcut - updates when hasUnsavedChanges changes
