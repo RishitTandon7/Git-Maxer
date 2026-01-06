@@ -37,7 +37,27 @@ export default function Dashboard() {
 
     // Initial data fetch - runs once on mount
     useEffect(() => {
-        checkUser()
+        let mounted = true
+        let timeoutId: NodeJS.Timeout
+
+        const init = async () => {
+            try {
+                // Fail-safe: Force loading off after 5 seconds max
+                timeoutId = setTimeout(() => {
+                    if (mounted) {
+                        console.warn('⚠️ Loading timeout - forcing off')
+                        setLoading(false)
+                    }
+                }, 5000)
+
+                await checkUser()
+            } catch (error) {
+                console.error('Init error:', error)
+                if (mounted) setLoading(false)
+            }
+        }
+
+        init()
 
         // Track View
         fetch('/api/analytics/track', {
@@ -48,6 +68,11 @@ export default function Dashboard() {
                 country: Intl.DateTimeFormat().resolvedOptions().timeZone.split('/')[0]
             })
         }).catch(() => { })
+
+        return () => {
+            mounted = false
+            if (timeoutId) clearTimeout(timeoutId)
+        }
     }, [])
 
     // Keyboard shortcut - updates when hasUnsavedChanges changes
