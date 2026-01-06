@@ -273,11 +273,15 @@ export default function PricingPage() {
                                 <p className="text-blue-400/70 text-sm font-medium">Per Month</p>
                             </div>
                             <ul className="space-y-3 text-sm text-blue-50 relative z-10">
-                                <li className="flex items-center gap-2"><span className="text-blue-400 text-lg">✓</span> <b className="text-blue-200">3 Commits per Day</b></li>
+                                <li className="flex items-center gap-2"><span className="text-blue-400 text-lg">✓</span> <b className="text-blue-200">1 Commit, 1 Repo Daily</b></li>
                                 <li className="flex items-center gap-2"><span className="text-blue-400 text-lg">✓</span> <span className="text-blue-100">Unlimited Repositories</span></li>
                                 <li className="flex items-center gap-2"><span className="text-sky-400 text-lg">★</span> <b className="text-blue-200">Pro Badge</b></li>
                                 <li className="flex items-center gap-2"><span className="text-blue-400 text-lg">✓</span> <span className="text-blue-100">Custom Login Screen</span></li>
+                                <li className="flex items-center gap-2"><span className="text-green-400 text-lg">🎯</span> <b className="text-green-200">365 Contributions at Year End*</b></li>
                             </ul>
+                            <p className="text-[10px] text-gray-500 italic relative z-10 mt-2">
+                                *if you buy it for all 12 months
+                            </p>
                             <button
                                 onClick={() => handlePayment('pro', 3000)}
                                 disabled={loading || userPlan === 'pro' || userPlan === 'owner'}
