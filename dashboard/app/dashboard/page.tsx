@@ -314,14 +314,14 @@ export default function Dashboard() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-6 border-b border-[#21262d]">
                     <div>
                         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#c9d1d9] flex items-center gap-3">
-                            <Code className={`w-7 h-7 sm:w-8 sm:h-8 ${userPlan === 'pro' ? 'text-[#EAB308]' : userPlan === 'enterprise' ? 'text-[#3B82F6]' : 'text-[#58a6ff]'}`} />
+                            <Code className={`w-7 h-7 sm:w-8 sm:h-8 ${userPlan === 'enterprise' ? 'text-[#EAB308]' : userPlan === 'pro' ? 'text-[#3B82F6]' : 'text-[#58a6ff]'}`} />
                             GitMaxer
                         </h1>
                         <p className="text-sm sm:text-base text-[#8b949e] mt-2">
-                            Welcome back, <span className={`font-semibold ${userPlan === 'pro' ? 'text-[#EAB308]' : userPlan === 'enterprise' ? 'text-[#3B82F6]' : 'text-[#58a6ff]'}`}>@{user?.user_metadata?.user_name || config.github_username || 'User'}</span>
+                            Welcome back, <span className={`font-semibold ${userPlan === 'enterprise' ? 'text-[#EAB308]' : userPlan === 'pro' ? 'text-[#3B82F6]' : 'text-[#58a6ff]'}`}>@{user?.user_metadata?.user_name || config.github_username || 'User'}</span>
                             {userPlan !== 'free' && userPlan !== 'owner' && (
-                                <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${userPlan === 'pro' ? 'bg-[#EAB308]/20 text-[#EAB308] border border-[#EAB308]/30' : 'bg-[#3B82F6]/20 text-[#3B82F6] border border-[#3B82F6]/30'}`}>
-                                    {userPlan === 'pro' ? '⭐ PRO' : '💼 ENTERPRISE'}
+                                <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${userPlan === 'enterprise' ? 'bg-[#EAB308]/20 text-[#EAB308] border border-[#EAB308]/30' : 'bg-[#3B82F6]/20 text-[#3B82F6] border border-[#3B82F6]/30'}`}>
+                                    {userPlan === 'enterprise' ? '💼 ENTERPRISE' : '⭐ PRO'}
                                 </span>
                             )}
                             {userPlan === 'owner' && (
