@@ -168,6 +168,39 @@ export default function Dashboard() {
             setOriginalConfig(configData)
             setUserPlan(settings.plan_type || 'free')
 
+            // Check subscription expiry for paid plans
+            if (settings.plan_type === 'pro' || settings.plan_type === 'enterprise') {
+                const expiryDate = settings.plan_expiry ? new Date(settings.plan_expiry) : null
+                const now = new Date()
+
+                if (expiryDate) {
+                    const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+                    // Subscription expired - downgrade to free
+                    if (daysUntilExpiry <= 0) {
+                        console.warn('Subscription expired, downgrading to free')
+
+                        // Update in database
+                        await supabase
+                            .from('user_settings')
+                            .update({
+                                plan_type: 'free',
+                                is_paid: false
+                            })
+                            .eq('id', userId)
+
+                        setUserPlan('free')
+                        localStorage.setItem('userPlan', 'free')
+
+                        showToast('error', `Your ${settings.plan_type} subscription has expired. You've been downgraded to the free plan. Renew on the Pricing page!`)
+                    }
+                    // Warning: 3 days or less until expiry
+                    else if (daysUntilExpiry <= 3) {
+                        showToast('error', `⚠️ Your ${settings.plan_type} plan expires in ${daysUntilExpiry} day${daysUntilExpiry > 1 ? 's' : ''}! Renew soon to keep your benefits.`)
+                    }
+                }
+            }
+
             // Load history
             const { data: history } = await supabase
                 .from('generated_history')
