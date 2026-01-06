@@ -416,18 +416,66 @@ export default function PricingPage() {
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 {/* Icon */}
-                                <div className="flex justify-center mb-6">
+                                <div className="flex justify-center mb-6 relative">
                                     {modalContent.type === 'success' && (
-                                        <motion.div
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1, rotate: 360 }}
-                                            transition={{ type: "spring", duration: 0.6, delay: 0.2 }}
-                                            className="w-20 h-20 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center"
-                                        >
-                                            <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        </motion.div>
+                                        <>
+                                            {/* Confetti particles */}
+                                            {[...Array(20)].map((_, i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    initial={{ y: 0, x: 0, opacity: 1, scale: 0 }}
+                                                    animate={{
+                                                        y: [0, -100, -200],
+                                                        x: [(i % 2 === 0 ? 1 : -1) * (Math.random() * 100 + 50)],
+                                                        opacity: [1, 1, 0],
+                                                        scale: [0, 1, 0.5],
+                                                        rotate: Math.random() * 720
+                                                    }}
+                                                    transition={{
+                                                        duration: 2,
+                                                        delay: i * 0.05,
+                                                        repeat: Infinity,
+                                                        repeatDelay: 1
+                                                    }}
+                                                    className="absolute w-2 h-2 rounded-full"
+                                                    style={{
+                                                        background: ['#EAB308', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'][i % 5]
+                                                    }}
+                                                />
+                                            ))}
+
+                                            {/* Animated Crown/Star */}
+                                            <motion.div
+                                                initial={{ scale: 0, rotate: -180 }}
+                                                animate={{
+                                                    scale: [0, 1.2, 1],
+                                                    rotate: [- 180, 0, 360, 0],
+                                                }}
+                                                transition={{
+                                                    duration: 1,
+                                                    times: [0, 0.6, 1]
+                                                }}
+                                                className="relative"
+                                            >
+                                                {/* Glow effect */}
+                                                <motion.div
+                                                    animate={{
+                                                        scale: [1, 1.3, 1],
+                                                        opacity: [0.5, 0.8, 0.5]
+                                                    }}
+                                                    transition={{
+                                                        duration: 2,
+                                                        repeat: Infinity
+                                                    }}
+                                                    className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 blur-xl"
+                                                />
+
+                                                {/* Crown emoji */}
+                                                <div className="relative w-24 h-24 flex items-center justify-center text-6xl">
+                                                    👑
+                                                </div>
+                                            </motion.div>
+                                        </>
                                     )}
                                     {modalContent.type === 'error' && (
                                         <motion.div
