@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # Run loop
     runner = LocalRunner()
     
-    print("🤖 GitMaxer Local Bot Runner v2.0")
+    print("=== GitMaxer Local Bot Runner v2.0 ===")
     print("Logic: Default 11 PM IST start")
     
     while True:
