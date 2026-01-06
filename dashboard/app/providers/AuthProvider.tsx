@@ -114,6 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signOut()
         setUser(null)
         setUserPlan(null)
+        localStorage.removeItem('userPlan') // Clear cached plan
+        window.location.href = '/' // Force full page reload to clear all state
     }
 
     return (
