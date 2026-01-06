@@ -100,10 +100,30 @@ export default function Dashboard() {
 
     const checkUser = async () => {
         console.log('🔍 checkUser: Starting...')
+
+        // 1. Critical Check: Enviroment Variables
+        const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        if (!sbUrl || sbUrl.includes('placeholder')) {
+            console.error('❌ CRITICAL: Supabase URL is missing or placeholder')
+            showToast('error', 'SETUP ERROR: Supabase URL is missing! Check your environment variables.')
+            setLoading(false)
+            return
+        }
+
         try {
             console.log('🔍 checkUser: Calling supabase.auth.getUser()')
-            const { data: { user }, error } = await supabase.auth.getUser()
-            console.log('🔍 checkUser: Got response:', { user: !!user, error })
+
+            // Add a race condition to fail fast if Supabase is unreachable
+            const timeOutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Supabase Connection Timeout')), 5000)
+            )
+
+            const { data: { user }, error } = await Promise.race([
+                supabase.auth.getUser(),
+                timeOutPromise
+            ]) as any
+
+            console.log('🔍 checkUser: Got response:', { user, error })
 
             if (error || !user) {
                 console.error('Auth error:', error)
