@@ -37,23 +37,7 @@ export default function Dashboard() {
 
     // Initial data fetch - runs once on mount
     useEffect(() => {
-        let hasLoaded = false
-
-        // Aggressive timeout - FORCE loading off after 3 seconds
-        const forceLoadTimeout = setTimeout(() => {
-            if (!hasLoaded) {
-                console.warn('⚠️ Dashboard load timeout - forcing display')
-                setLoading(false)
-            }
-        }, 3000)
-
-        const load = async () => {
-            await checkUser()
-            hasLoaded = true
-            clearTimeout(forceLoadTimeout)
-        }
-
-        load()
+        checkUser()
 
         // Track View
         fetch('/api/analytics/track', {
@@ -64,8 +48,6 @@ export default function Dashboard() {
                 country: Intl.DateTimeFormat().resolvedOptions().timeZone.split('/')[0]
             })
         }).catch(() => { })
-
-        return () => clearTimeout(forceLoadTimeout)
     }, [])
 
     // Keyboard shortcut - updates when hasUnsavedChanges changes
