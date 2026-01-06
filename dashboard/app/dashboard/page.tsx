@@ -168,6 +168,11 @@ export default function Dashboard() {
             setOriginalConfig(configData)
             setUserPlan(settings.plan_type || 'free')
 
+            // Sync with localStorage to keep AuthProvider in sync on next load
+            if (settings.plan_type) {
+                localStorage.setItem('userPlan', settings.plan_type)
+            }
+
             // Check subscription expiry for paid plans
             if (settings.plan_type === 'pro' || settings.plan_type === 'enterprise') {
                 const expiryDate = settings.plan_expiry ? new Date(settings.plan_expiry) : null
@@ -178,7 +183,7 @@ export default function Dashboard() {
 
                     // Subscription expired - downgrade to free
                     if (daysUntilExpiry <= 0) {
-                        console.warn('Subscription expired, downgrading to free')
+                        console.warn(`Subscription expired (Days left: ${daysUntilExpiry}), downgrading to free`)
 
                         // Update in database
                         await supabase
