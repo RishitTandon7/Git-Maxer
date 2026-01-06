@@ -10,10 +10,10 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
     try {
-        // Razorpay instance with live credentials
+        // Razorpay instance with credentials from environment variables
         const razorpay = new Razorpay({
-            key_id: 'rzp_live_Rxq9o4Kicc1f3V',
-            key_secret: '6njwAIIYZ5xw1HBm5l9Zu75D',
+            key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
+            key_secret: process.env.RAZORPAY_KEY_SECRET || '',
         });
 
         const { amount, plan } = await req.json();

@@ -65,7 +65,7 @@ export default function PricingPage() {
 
             // 2. Initialize Razorpay
             const options = {
-                key: 'rzp_live_Rxq9o4Kicc1f3V', // Razorpay Live Key ID
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '', // Razorpay Key ID from env
                 amount: data.amount,
                 currency: data.currency,
                 name: `GitMaxer ${plan.charAt(0).toUpperCase() + plan.slice(1)}`,
