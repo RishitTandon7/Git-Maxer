@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
         // 2. Validate/Prepare Data
         // Ensure we only touch the authenticated user's data
-        const settingsData = {
+        const settingsData: Record<string, any> = {
             id: user.id,          // Primary key - same as auth user id
             user_id: user.id,     // Foreign key - references auth.users.id
             github_username: body.github_username,
@@ -58,10 +58,15 @@ export async function POST(request: NextRequest) {
             preferred_language: body.preferred_language,
             commit_time: body.commit_time,
             min_contributions: body.min_contributions,
-            pause_bot: body.pause_bot
+            pause_bot: body.pause_bot,
+            plan_type: 'free',    // Default plan for new users
+            is_paid: false        // Default to unpaid
         }
 
-        // ... existing code ...
+        // Include GitHub token if provided
+        if (body.github_access_token) {
+            settingsData.github_access_token = body.github_access_token
+        }
 
         // 3. Perform DB Operation using Service Client
         const serviceClient = getServiceClient()
@@ -69,7 +74,19 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
         }
 
-        // Check if row exists to decide Upsert vs Update (or just Upsert)
+        // Check if this is a new user by querying existing settings
+        const { data: existing } = await serviceClient
+            .from('user_settings')
+            .select('plan_type, is_paid')
+            .eq('id', user.id)
+            .single()
+
+        // If user already exists, preserve their plan and paid status (don't overwrite with free)
+        if (existing) {
+            delete settingsData.plan_type
+            delete settingsData.is_paid
+        }
+
         // Upsert matches on primary key 'id'
         const { error: upsertError } = await serviceClient
             .from('user_settings')
