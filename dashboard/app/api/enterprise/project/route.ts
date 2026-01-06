@@ -8,7 +8,7 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
     try {
-        const { userId, projectName, projectDescription, techStack } = await req.json()
+        const { userId, projectName, repoName, projectDescription, techStack } = await req.json()
 
         // Verify user has Enterprise plan
         const { data: user, error: userError } = await supabase
@@ -40,8 +40,8 @@ export async function POST(req: Request) {
             }, { status: 400 })
         }
 
-        // Generate repo name from project name
-        const repoName = projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+        // Use provided repo name or generate fallback
+        const finalRepoName = repoName ? repoName.toLowerCase().replace(/[^a-z0-9-_]+/g, '-') : projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 
         // Create project record
         const { data: project, error: projectError } = await supabase
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
                 project_name: projectName,
                 project_description: projectDescription,
                 tech_stack: techStack,
-                repo_name: repoName,
+                repo_name: finalRepoName,
                 days_duration: 15,
                 current_day: 0,
                 status: 'in_progress'

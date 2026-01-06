@@ -8,6 +8,7 @@ export function EnterpriseProjectPanel({ userId, isActive }: { userId: string, i
     const [loading, setLoading] = useState(true)
     const [formData, setFormData] = useState({
         name: '',
+        repoName: '',
         description: '',
         stack: ''
     })
@@ -38,6 +39,7 @@ export function EnterpriseProjectPanel({ userId, isActive }: { userId: string, i
                 body: JSON.stringify({
                     userId,
                     projectName: formData.name,
+                    repoName: formData.repoName || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
                     projectDescription: formData.description,
                     techStack: formData.stack.split(',').map(s => s.trim())
                 })
@@ -45,6 +47,8 @@ export function EnterpriseProjectPanel({ userId, isActive }: { userId: string, i
             const data = await res.json()
             if (data.success) {
                 setProject(data.project)
+            } else {
+                console.error(data.error)
             }
         } catch (e) {
             console.error(e)
@@ -77,15 +81,27 @@ export function EnterpriseProjectPanel({ userId, isActive }: { userId: string, i
                     </p>
 
                     <div className="grid gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-1">Project Name</label>
-                            <input
-                                type="text"
-                                className="w-full bg-[#161b22] border border-[#30363d] rounded-lg px-4 py-2 text-white focus:border-amber-500 outline-none transition-colors"
-                                placeholder="e.g., E-commerce Store"
-                                value={formData.name}
-                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Project Name</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-[#161b22] border border-[#30363d] rounded-lg px-4 py-2 text-white focus:border-amber-500 outline-none transition-colors"
+                                    placeholder="e.g., E-commerce Store"
+                                    value={formData.name}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Repository Name</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-[#161b22] border border-[#30363d] rounded-lg px-4 py-2 text-white focus:border-amber-500 outline-none transition-colors font-mono text-sm"
+                                    placeholder="e.g., my-ecommerce-app"
+                                    value={formData.repoName}
+                                    onChange={e => setFormData({ ...formData, repoName: e.target.value })}
+                                />
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-400 mb-1">Tech Stack</label>
