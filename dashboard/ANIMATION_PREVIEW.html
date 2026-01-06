@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎉 Pro Upgrade Celebration Preview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        @keyframes confetti {
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg) scale(0);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(-100px) translateX(var(--x)) rotate(360deg) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-200px) translateX(var(--x)) rotate(720deg) scale(0.5);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes crownSpin {
+            0% {
+                transform: scale(0) rotate(-180deg);
+            }
+            60% {
+                transform: scale(1.2) rotate(0deg);
+            }
+            100% {
+                transform: scale(1) rotate(360deg);
+            }
+        }
+        
+        @keyframes glow {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            50% {
+                transform: scale(1.3);
+                opacity: 0.8;
+            }
+        }
+        
+        .confetti {
+            animation: confetti 2s infinite;
+            animation-delay: calc(var(--i) * 0.05s);
+        }
+        
+        .crown {
+            animation: crownSpin 1s ease-out forwards;
+        }
+        
+        .glow {
+            animation: glow 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-gradient-to-br from-green-500/20 to-emerald-500/10 backdrop-blur-xl border border-green-500/30 rounded-2xl p-8 shadow-2xl max-w-md w-full">
+            
+            <!-- Confetti Container -->
+            <div class="flex justify-center mb-6 relative h-32">
+                <!-- Confetti particles -->
+                <div id="confetti-container" class="absolute inset-0"></div>
+                
+                <!-- Animated Crown -->
+                <div class="relative crown">
+                    <!-- Glow effect -->
+                    <div class="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 blur-xl glow"></div>
+                    
+                    <!-- Crown emoji -->
+                    <div class="relative w-24 h-24 flex items-center justify-center text-6xl">
+                        👑
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Title -->
+            <h2 class="text-3xl font-bold text-center mb-3 text-white animate-pulse">
+                🎉 Welcome to PRO!
+            </h2>
+            
+            <!-- Message -->
+            <p class="text-center text-gray-300 mb-8">
+                Your account has been upgraded successfully! Enjoy unlimited features. 🚀
+            </p>
+            
+            <!-- Close Button -->
+            <button 
+                onclick="location.reload()"
+                class="w-full py-3 rounded-full font-bold bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white transition-all shadow-lg transform hover:scale-105"
+            >
+                🎉 Awesome!
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Generate 20 confetti particles
+        const container = document.getElementById('confetti-container');
+        const colors = ['#EAB308', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'];
+        
+        for (let i = 0; i < 20; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti absolute w-2 h-2 rounded-full';
+            confetti.style.background = colors[i % 5];
+            confetti.style.setProperty('--i', i);
+            confetti.style.setProperty('--x', `${(i % 2 === 0 ? 1 : -1) * (Math.random() * 100 + 50)}px`);
+            confetti.style.left = '50%';
+            confetti.style.top = '50%';
+            container.appendChild(confetti);
+        }
+    </script>
+</body>
+</html>
