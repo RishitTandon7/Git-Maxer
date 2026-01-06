@@ -35,7 +35,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         console.log('🎯 Auth: Detected OWNER via metadata')
                     }
 
-                    // Background fetch from DB
+                    // Check localStorage cache first for instant loading
+                    const cachedPlan = localStorage.getItem('userPlan')
+                    if (cachedPlan) {
+                        setUserPlan(cachedPlan as PlanType)
+                        console.log('🎯 Auth: Using cached plan:', cachedPlan)
+                    }
+
+                    // Background fetch from DB to update cache
                     const { data: settings } = await supabase
                         .from('user_settings')
                         .select('plan_type')
@@ -46,8 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         // Owner always stays owner
                         if (session.user.user_metadata?.user_name === 'rishittandon7') {
                             setUserPlan('owner')
+                            localStorage.setItem('userPlan', 'owner')
                         } else {
                             setUserPlan(settings.plan_type as PlanType)
+                            localStorage.setItem('userPlan', settings.plan_type)
                             console.log('🎯 Auth: Plan from DB:', settings.plan_type)
                         }
                     }
@@ -68,9 +77,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (session?.user) {
                 setUser(session.user)
 
+                // Check cache first
+                const cachedPlan = localStorage.getItem('userPlan')
+                if (cachedPlan) {
+                    setUserPlan(cachedPlan as PlanType)
+                }
+
                 // Instant owner check
                 if (session.user.user_metadata?.user_name === 'rishittandon7') {
                     setUserPlan('owner')
+                    localStorage.setItem('userPlan', 'owner')
                 } else {
                     // Fetch plan for non-owners
                     const { data: settings } = await supabase
@@ -81,11 +97,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                     if (settings?.plan_type) {
                         setUserPlan(settings.plan_type as PlanType)
+                        localStorage.setItem('userPlan', settings.plan_type)
                     }
                 }
             } else {
                 setUser(null)
                 setUserPlan(null)
+                localStorage.removeItem('userPlan') // Clear cache on logout
             }
         })
 
