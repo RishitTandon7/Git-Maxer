@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Settings, Activity, Power, Save, History, User, Code, Clock, Languages, Check, X, AlertCircle, ChevronDown, Github, Globe, Home } from 'lucide-react'
 import Link from 'next/link'
 import { OwnerStats } from './OwnerStats'
+import { EnterpriseProjectPanel } from './EnterpriseProjectPanel'
 import { useAuth } from '../providers/AuthProvider'
 
 // Force dynamic rendering to avoid prerendering issues with Supabase
@@ -373,232 +374,243 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                    <motion.div whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }} onClick={toggleBot} className="bg-[#161b22] border border-[#30363d] rounded-lg p-5 hover:border-[#58a6ff] transition-all cursor-pointer">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm text-[#8b949e] font-medium">Bot Status</span>
-                            <Activity className="w-5 h-5 text-[#58a6ff]" />
-                        </div>
-                        <div className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-                            {config.pause_bot ? (
-                                <>
-                                    <span className="w-2 h-2 rounded-full bg-[#f85149] animate-pulse"></span>
-                                    <span className="text-[#f85149]">Paused</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span className="w-2 h-2 rounded-full bg-[#3fb950] animate-pulse"></span>
-                                    <span className="text-[#3fb950]">Active</span>
-                                </>
-                            )}
-                        </div>
-                        <p className="text-xs text-[#8b949e] mt-2">Click to toggle</p>
-                    </motion.div>
-
-                    <motion.div whileHover={{ y: -4 }} className="bg-[#161b22] border border-[#30363d] rounded-lg p-5 hover:border-[#a371f7] transition-all">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm text-[#8b949e] font-medium">Contributions</span>
-                            <History className="w-5 h-5 text-[#a371f7]" />
-                        </div>
-                        <div className="text-xl sm:text-2xl font-bold text-[#c9d1d9]">{logs.length} Total</div>
-                    </motion.div>
-
-                    <motion.div whileHover={{ y: -4 }} className="bg-[#161b22] border border-[#30363d] rounded-lg p-5 hover:border-[#3fb950] transition-all">
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm text-[#8b949e] font-medium">Daily Minimum</span>
-                            <Code className="w-5 h-5 text-[#3fb950]" />
-                        </div>
-                        <div className="text-xl sm:text-2xl font-bold text-[#c9d1d9]">{config.min_contributions}/day</div>
-                    </motion.div>
-                </div>
-
-                {/* Main Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Settings */}
-                        <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-5 sm:p-6">
-                            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-[#21262d]">
-                                <Settings className="w-5 h-5 text-[#58a6ff]" />
-                                <h2 className="text-lg font-semibold text-[#c9d1d9]">Bot Configuration</h2>
-                            </div>
-
-                            <div className="space-y-5">
-                                {/* Language */}
-                                <div>
-                                    <label className="text-sm text-[#8b949e] font-medium mb-2 flex items-center gap-2">
-                                        <Languages className="w-4 h-4" />
-                                        Preferred Language
-                                    </label>
-                                    <div className="relative">
-                                        <select
-                                            value={config.preferred_language}
-                                            onChange={(e) => setConfig(prev => ({ ...prev, preferred_language: e.target.value }))}
-                                            className="w-full bg-[#0d1117] border-2 border-[#30363d] rounded-lg p-3.5 text-[#c9d1d9] font-medium focus:outline-none focus:border-[#58a6ff] focus:ring-2 focus:ring-[#58a6ff]/30 transition-all appearance-none cursor-pointer hover:border-[#484f58]"
-                                        >
-                                            {languages.map(lang => (
-                                                <option key={lang.value} value={lang.value} className="bg-[#161b22] py-2">{lang.label}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8b949e] pointer-events-none" />
-                                    </div>
-                                </div>
-
-                                {/* Time */}
-                                <div>
-                                    <label className="text-sm text-[#8b949e] font-medium mb-2 flex items-center gap-2">
-                                        <Clock className="w-4 h-4" />
-                                        Commit Time (IST)
-                                    </label>
-                                    <input
-                                        type="time"
-                                        value={config.commit_time || ''}
-                                        onChange={(e) => setConfig(prev => ({ ...prev, commit_time: e.target.value || null }))}
-                                        className="w-full bg-[#0d1117] border-2 border-[#30363d] rounded-lg p-3.5 text-[#c9d1d9] font-medium focus:outline-none focus:border-[#58a6ff] focus:ring-2 focus:ring-[#58a6ff]/30 transition-all hover:border-[#484f58] cursor-pointer"
-                                        placeholder="--:--"
-                                    />
-                                    <p className="text-xs text-[#8b949e] mt-1.5">Leave empty for random time each day</p>
-                                </div>
-
-                                {/* Daily Commits Slider */}
-                                <div>
-                                    <label className="text-sm text-[#8b949e] font-medium mb-3 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Code className="w-4 h-4" />
-                                            Daily Commits
-                                        </div>
-                                        <span className="text-[#c9d1d9] font-bold bg-[#21262d] px-2 py-0.5 rounded text-xs">
-                                            {config.min_contributions} / day
-                                        </span>
-                                    </label>
-                                    <input
-                                        type="range"
-                                        min="1"
-                                        max={user?.user_metadata?.user_name === 'rishittandon7' ? "50" : "10"}
-                                        value={config.min_contributions}
-                                        onChange={(e) => setConfig(prev => ({ ...prev, min_contributions: parseInt(e.target.value) }))}
-                                        className="w-full h-2 bg-[#21262d] rounded-lg appearance-none cursor-pointer accent-[#2ea043]"
-                                    />
-                                    <div className="flex justify-between text-[10px] text-[#8b949e] mt-2 font-mono">
-                                        <span>1</span>
-                                        <span>{user?.user_metadata?.user_name === 'rishittandon7' ? "50" : "10"}</span>
-                                    </div>
-                                </div>
-
-                                {/* Save */}
-                                <motion.button
-                                    onClick={handleSave}
-                                    disabled={saving || !hasUnsavedChanges}
-                                    whileHover={hasUnsavedChanges ? { scale: 1.02 } : {}}
-                                    whileTap={hasUnsavedChanges ? { scale: 0.98 } : {}}
-                                    className={`w-full font-semibold py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 border shadow-lg ${hasUnsavedChanges
-                                        ? 'bg-[#238636] text-white border-[#2ea043] shadow-[#238636]/20 hover:bg-[#2ea043] active:bg-[#2c974b]'
-                                        : 'bg-[#21262d] text-[#8b949e] border-[#30363d] cursor-not-allowed'
-                                        }`}
-                                >
-                                    <Save className="w-5 h-5" />
-                                    {saving ? 'Saving...' : hasUnsavedChanges ? 'Save Changes (Ctrl+S)' : 'No Changes'}
-                                </motion.button>
-                            </div>
-                        </div>
-
-                        {/* Account */}
-                        <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-5 sm:p-6">
-                            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#21262d]">
-                                <User className="w-5 h-5 text-[#58a6ff]" />
-                                <h2 className="text-lg font-semibold text-[#c9d1d9]">Account Info</h2>
-                            </div>
-                            <div className="flex items-center justify-between bg-[#0d1117] border border-[#30363d] rounded-lg p-4">
-                                <div className="flex items-center gap-3">
-                                    <User className="w-5 h-5 text-[#8b949e]" />
-                                    <div>
-                                        <p className="text-xs text-[#8b949e]">GitHub Username</p>
-                                        <p className="text-[#c9d1d9] font-mono font-semibold">@{config.github_username}</p>
-                                    </div>
-                                </div>
-                                <span className="text-xs text-[#8b949e] bg-[#21262d] px-3 py-1 rounded-full">Read-only</span>
-                            </div>
-
-                            <div className="flex items-center justify-between bg-[#0d1117] border border-[#30363d] rounded-lg p-4 mt-3">
-                                <div className="flex items-center gap-3 flex-1">
-                                    <Github className="w-5 h-5 text-[#8b949e]" />
-                                    <div className="flex-1">
-                                        <p className="text-xs text-[#8b949e] mb-1">Target Repository</p>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[#8b949e] font-mono text-sm">@{config.github_username}/</span>
-                                            <input
-                                                type="text"
-                                                value={config.repo_name || ''}
-                                                onChange={(e) => setConfig(prev => ({ ...prev, repo_name: e.target.value }))}
-                                                className="bg-[#0d1117] text-[#58a6ff] font-mono font-semibold focus:outline-none focus:border-b border-[#30363d] w-full max-w-[200px]"
-                                                placeholder="repo-name"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-end gap-2">
-                                    <a
-                                        href={`https://github.com/${config.github_username}/${config.repo_name || 'auto-contributions'}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-xs text-[#8b949e] hover:text-[#58a6ff] flex items-center gap-1"
-                                    >
-                                        View <Globe className="w-3 h-3" />
-                                    </a>
-                                    <select
-                                        value={config.repo_visibility}
-                                        onChange={(e) => setConfig(prev => ({ ...prev, repo_visibility: e.target.value }))}
-                                        className="text-xs bg-[#21262d] text-[#c9d1d9] px-2 py-1 rounded-md border-none focus:ring-0 cursor-pointer"
-                                    >
-                                        <option value="public">Public</option>
-                                        <option value="private">Private</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                {/* --- ENTERPRISE PANEL (Visible for Enterprise & Owner) --- */}
+                {(userPlan === 'enterprise' || userPlan === 'owner') && (
+                    <div className="mb-8">
+                        <EnterpriseProjectPanel userId={user?.id} isActive={true} />
                     </div>
+                )}
 
-                    {/* Activity */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-5 sm:p-6 lg:sticky lg:top-6">
-                            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-[#21262d]">
-                                <History className="w-5 h-5 text-[#58a6ff]" />
-                                <h2 className="text-lg font-semibold text-[#c9d1d9]">Recent Activity</h2>
+                {/* --- DAILY BOT STATS (Visible for Free, Pro, Owner) --- */}
+                {userPlan !== 'enterprise' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                        <motion.div whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }} onClick={toggleBot} className="bg-[#161b22] border border-[#30363d] rounded-lg p-5 hover:border-[#58a6ff] transition-all cursor-pointer">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-sm text-[#8b949e] font-medium">Bot Status</span>
+                                <Activity className="w-5 h-5 text-[#58a6ff]" />
                             </div>
-
-                            <div className="space-y-3 max-h-[500px] lg:max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                                {logs.map((log, index) => (
-                                    <motion.div
-                                        key={log.id}
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: index * 0.05 }}
-                                        className="bg-[#0d1117] border border-[#30363d] p-3 rounded-lg hover:border-[#58a6ff] transition-all group"
-                                    >
-                                        <div className="flex items-start justify-between gap-2 mb-2">
-                                            <span className="font-mono text-xs text-[#58a6ff] bg-[#58a6ff]/10 px-2 py-1 rounded">
-                                                {log.language || 'Code'}
-                                            </span>
-                                            <span className="text-xs text-[#8b949e]">
-                                                {new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-[#8b949e] line-clamp-2 group-hover:text-[#c9d1d9] transition-colors">
-                                            {log.content_snippet}
-                                        </p>
-                                    </motion.div>
-                                ))}
-                                {logs.length === 0 && (
-                                    <div className="text-center py-12 text-[#8b949e]">
-                                        <Code className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                                        <p className="text-sm">No activity yet</p>
-                                        <p className="text-xs mt-1">The bot will start soon!</p>
-                                    </div>
+                            <div className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                                {config.pause_bot ? (
+                                    <>
+                                        <span className="w-2 h-2 rounded-full bg-[#f85149] animate-pulse"></span>
+                                        <span className="text-[#f85149]">Paused</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="w-2 h-2 rounded-full bg-[#3fb950] animate-pulse"></span>
+                                        <span className="text-[#3fb950]">Active</span>
+                                    </>
                                 )}
                             </div>
+                            <p className="text-xs text-[#8b949e] mt-2">Click to toggle</p>
+                        </motion.div>
+
+                        <motion.div whileHover={{ y: -4 }} className="bg-[#161b22] border border-[#30363d] rounded-lg p-5 hover:border-[#a371f7] transition-all">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-sm text-[#8b949e] font-medium">Contributions</span>
+                                <History className="w-5 h-5 text-[#a371f7]" />
+                            </div>
+                            <div className="text-xl sm:text-2xl font-bold text-[#c9d1d9]">{logs.length} Total</div>
+                        </motion.div>
+
+                        <motion.div whileHover={{ y: -4 }} className="bg-[#161b22] border border-[#30363d] rounded-lg p-5 hover:border-[#3fb950] transition-all">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-sm text-[#8b949e] font-medium">Daily Minimum</span>
+                                <Code className="w-5 h-5 text-[#3fb950]" />
+                            </div>
+                            <div className="text-xl sm:text-2xl font-bold text-[#c9d1d9]">{config.min_contributions}/day</div>
+                        </motion.div>
+                    </div>
+                )}
+
+                {/* Main Grid - DAILY BOT SETTINGS (Visible for Free, Pro, Owner) */}
+                {userPlan !== 'enterprise' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 space-y-6">
+                            {/* Settings */}
+                            <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-5 sm:p-6">
+                                <div className="flex items-center gap-3 mb-5 pb-4 border-b border-[#21262d]">
+                                    <Settings className="w-5 h-5 text-[#58a6ff]" />
+                                    <h2 className="text-lg font-semibold text-[#c9d1d9]">Bot Configuration</h2>
+                                </div>
+
+                                <div className="space-y-5">
+                                    {/* Language */}
+                                    <div>
+                                        <label className="text-sm text-[#8b949e] font-medium mb-2 flex items-center gap-2">
+                                            <Languages className="w-4 h-4" />
+                                            Preferred Language
+                                        </label>
+                                        <div className="relative">
+                                            <select
+                                                value={config.preferred_language}
+                                                onChange={(e) => setConfig(prev => ({ ...prev, preferred_language: e.target.value }))}
+                                                className="w-full bg-[#0d1117] border-2 border-[#30363d] rounded-lg p-3.5 text-[#c9d1d9] font-medium focus:outline-none focus:border-[#58a6ff] focus:ring-2 focus:ring-[#58a6ff]/30 transition-all appearance-none cursor-pointer hover:border-[#484f58]"
+                                            >
+                                                {languages.map(lang => (
+                                                    <option key={lang.value} value={lang.value} className="bg-[#161b22] py-2">{lang.label}</option>
+                                                ))}
+                                            </select>
+                                            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8b949e] pointer-events-none" />
+                                        </div>
+                                    </div>
+
+                                    {/* Time */}
+                                    <div>
+                                        <label className="text-sm text-[#8b949e] font-medium mb-2 flex items-center gap-2">
+                                            <Clock className="w-4 h-4" />
+                                            Commit Time (IST)
+                                        </label>
+                                        <input
+                                            type="time"
+                                            value={config.commit_time || ''}
+                                            onChange={(e) => setConfig(prev => ({ ...prev, commit_time: e.target.value || null }))}
+                                            className="w-full bg-[#0d1117] border-2 border-[#30363d] rounded-lg p-3.5 text-[#c9d1d9] font-medium focus:outline-none focus:border-[#58a6ff] focus:ring-2 focus:ring-[#58a6ff]/30 transition-all hover:border-[#484f58] cursor-pointer"
+                                            placeholder="--:--"
+                                        />
+                                        <p className="text-xs text-[#8b949e] mt-1.5">Leave empty for random time each day</p>
+                                    </div>
+
+                                    {/* Daily Commits Slider */}
+                                    <div>
+                                        <label className="text-sm text-[#8b949e] font-medium mb-3 flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Code className="w-4 h-4" />
+                                                Daily Commits
+                                            </div>
+                                            <span className="text-[#c9d1d9] font-bold bg-[#21262d] px-2 py-0.5 rounded text-xs">
+                                                {config.min_contributions} / day
+                                            </span>
+                                        </label>
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max={user?.user_metadata?.user_name === 'rishittandon7' ? "50" : "10"}
+                                            value={config.min_contributions}
+                                            onChange={(e) => setConfig(prev => ({ ...prev, min_contributions: parseInt(e.target.value) }))}
+                                            className="w-full h-2 bg-[#21262d] rounded-lg appearance-none cursor-pointer accent-[#2ea043]"
+                                        />
+                                        <div className="flex justify-between text-[10px] text-[#8b949e] mt-2 font-mono">
+                                            <span>1</span>
+                                            <span>{user?.user_metadata?.user_name === 'rishittandon7' ? "50" : "10"}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Save */}
+                                    <motion.button
+                                        onClick={handleSave}
+                                        disabled={saving || !hasUnsavedChanges}
+                                        whileHover={hasUnsavedChanges ? { scale: 1.02 } : {}}
+                                        whileTap={hasUnsavedChanges ? { scale: 0.98 } : {}}
+                                        className={`w-full font-semibold py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 border shadow-lg ${hasUnsavedChanges
+                                            ? 'bg-[#238636] text-white border-[#2ea043] shadow-[#238636]/20 hover:bg-[#2ea043] active:bg-[#2c974b]'
+                                            : 'bg-[#21262d] text-[#8b949e] border-[#30363d] cursor-not-allowed'
+                                            }`}
+                                    >
+                                        <Save className="w-5 h-5" />
+                                        {saving ? 'Saving...' : hasUnsavedChanges ? 'Save Changes (Ctrl+S)' : 'No Changes'}
+                                    </motion.button>
+                                </div>
+                            </div>
+
+                            {/* Account */}
+                            <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-5 sm:p-6">
+                                <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#21262d]">
+                                    <User className="w-5 h-5 text-[#58a6ff]" />
+                                    <h2 className="text-lg font-semibold text-[#c9d1d9]">Account Info</h2>
+                                </div>
+                                <div className="flex items-center justify-between bg-[#0d1117] border border-[#30363d] rounded-lg p-4">
+                                    <div className="flex items-center gap-3">
+                                        <User className="w-5 h-5 text-[#8b949e]" />
+                                        <div>
+                                            <p className="text-xs text-[#8b949e]">GitHub Username</p>
+                                            <p className="text-[#c9d1d9] font-mono font-semibold">@{config.github_username}</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs text-[#8b949e] bg-[#21262d] px-3 py-1 rounded-full">Read-only</span>
+                                </div>
+
+                                <div className="flex items-center justify-between bg-[#0d1117] border border-[#30363d] rounded-lg p-4 mt-3">
+                                    <div className="flex items-center gap-3 flex-1">
+                                        <Github className="w-5 h-5 text-[#8b949e]" />
+                                        <div className="flex-1">
+                                            <p className="text-xs text-[#8b949e] mb-1">Target Repository</p>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[#8b949e] font-mono text-sm">@{config.github_username}/</span>
+                                                <input
+                                                    type="text"
+                                                    value={config.repo_name || ''}
+                                                    onChange={(e) => setConfig(prev => ({ ...prev, repo_name: e.target.value }))}
+                                                    className="bg-[#0d1117] text-[#58a6ff] font-mono font-semibold focus:outline-none focus:border-b border-[#30363d] w-full max-w-[200px]"
+                                                    placeholder="repo-name"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <a
+                                            href={`https://github.com/${config.github_username}/${config.repo_name || 'auto-contributions'}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-[#8b949e] hover:text-[#58a6ff] flex items-center gap-1"
+                                        >
+                                            View <Globe className="w-3 h-3" />
+                                        </a>
+                                        <select
+                                            value={config.repo_visibility}
+                                            onChange={(e) => setConfig(prev => ({ ...prev, repo_visibility: e.target.value }))}
+                                            className="text-xs bg-[#21262d] text-[#c9d1d9] px-2 py-1 rounded-md border-none focus:ring-0 cursor-pointer"
+                                        >
+                                            <option value="public">Public</option>
+                                            <option value="private">Private</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Activity */}
+                        <div className="lg:col-span-1">
+                            <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-5 sm:p-6 lg:sticky lg:top-6">
+                                <div className="flex items-center gap-3 mb-5 pb-4 border-b border-[#21262d]">
+                                    <History className="w-5 h-5 text-[#58a6ff]" />
+                                    <h2 className="text-lg font-semibold text-[#c9d1d9]">Recent Activity</h2>
+                                </div>
+
+                                <div className="space-y-3 max-h-[500px] lg:max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {logs.map((log, index) => (
+                                        <motion.div
+                                            key={log.id}
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="bg-[#0d1117] border border-[#30363d] p-3 rounded-lg hover:border-[#58a6ff] transition-all group"
+                                        >
+                                            <div className="flex items-start justify-between gap-2 mb-2">
+                                                <span className="font-mono text-xs text-[#58a6ff] bg-[#58a6ff]/10 px-2 py-1 rounded">
+                                                    {log.language || 'Code'}
+                                                </span>
+                                                <span className="text-xs text-[#8b949e]">
+                                                    {new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-[#8b949e] line-clamp-2 group-hover:text-[#c9d1d9] transition-colors">
+                                                {log.content_snippet}
+                                            </p>
+                                        </motion.div>
+                                    ))}
+                                    {logs.length === 0 && (
+                                        <div className="text-center py-12 text-[#8b949e]">
+                                            <Code className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                                            <p className="text-sm">No activity yet</p>
+                                            <p className="text-xs mt-1">The bot will start soon!</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Mobile Nav */}
