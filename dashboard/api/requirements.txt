@@ -1,0 +1,5 @@
+PyGithub==2.1.1
+supabase==2.3.0
+google-generativeai==0.3.2
+pytz==2023.3
+httpx==0.25.2
