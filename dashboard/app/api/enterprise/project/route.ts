@@ -43,6 +43,46 @@ export async function POST(req: Request) {
         // Use provided repo name or generate fallback
         const finalRepoName = repoName ? repoName.toLowerCase().replace(/[^a-z0-9-_]+/g, '-') : projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 
+        // Check if GitHub repo exists and create if needed
+        try {
+            const { Octokit } = await import('@octokit/rest')
+            const octokit = new Octokit({ auth: user.github_access_token })
+
+            const githubUser = await octokit.users.getAuthenticated()
+            const fullRepoName = `${githubUser.data.login}/${finalRepoName}`
+
+            // Check if repo exists
+            let repoExists = false
+            try {
+                await octokit.repos.get({
+                    owner: githubUser.data.login,
+                    repo: finalRepoName
+                })
+                repoExists = true
+                console.log(`Repository ${fullRepoName} already exists`)
+            } catch (repoError: any) {
+                if (repoError.status === 404) {
+                    // Repo doesn't exist - create it (90% case)
+                    console.log(`Creating repository ${fullRepoName}...`)
+                    await octokit.repos.createForAuthenticatedUser({
+                        name: finalRepoName,
+                        description: `${projectName} - AI-generated project by GitMaxer Enterprise`,
+                        private: false,
+                        auto_init: true
+                    })
+                    console.log(`✅ Repository ${fullRepoName} created successfully`)
+                } else {
+                    throw repoError
+                }
+            }
+        } catch (githubError: any) {
+            console.error('GitHub repo check/creation failed:', githubError)
+            return NextResponse.json({
+                error: 'Failed to create GitHub repository',
+                details: githubError.message
+            }, { status: 500 })
+        }
+
         // Create project record
         const { data: project, error: projectError } = await supabase
             .from('projects')
