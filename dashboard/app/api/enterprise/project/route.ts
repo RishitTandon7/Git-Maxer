@@ -21,7 +21,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 })
         }
 
-        if (user.plan_type !== 'enterprise') {
+        if (user.plan_type !== 'enterprise' && user.plan_type !== 'owner') {
             return NextResponse.json({ error: 'Enterprise plan required' }, { status: 403 })
         }
 
