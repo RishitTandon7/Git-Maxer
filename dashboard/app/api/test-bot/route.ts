@@ -31,7 +31,7 @@ export async function POST() {
         console.log(`🧪 Manual bot test triggered by user: ${user.id}`)
 
         // Import and run the bot logic directly
-        const { runBotForUser } = await import('@/utils/bot-runner')
+        const { runBotForUser } = await import('../../../utils/bot-runner')
         const result = await runBotForUser(user.id)
 
         return NextResponse.json({
