@@ -45,35 +45,67 @@ export async function POST(req: Request) {
 
         // Check if GitHub repo exists and create if needed
         try {
-            const { Octokit } = await import('@octokit/rest')
-            const octokit = new Octokit({ auth: user.github_access_token })
+            const githubToken = user.github_access_token
+            if (!githubToken) {
+                return NextResponse.json({
+                    error: 'GitHub token not found. Please reconnect your GitHub account.'
+                }, { status: 400 })
+            }
 
-            const githubUser = await octokit.users.getAuthenticated()
-            const fullRepoName = `${githubUser.data.login}/${finalRepoName}`
+            // Get authenticated user
+            const userResponse = await fetch('https://api.github.com/user', {
+                headers: {
+                    'Authorization': `Bearer ${githubToken}`,
+                    'Accept': 'application/vnd.github+json',
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+            })
+
+            if (!userResponse.ok) {
+                throw new Error('Failed to authenticate with GitHub')
+            }
+
+            const githubUser = await userResponse.json()
+            const fullRepoName = `${githubUser.login}/${finalRepoName}`
 
             // Check if repo exists
-            let repoExists = false
-            try {
-                await octokit.repos.get({
-                    owner: githubUser.data.login,
-                    repo: finalRepoName
-                })
-                repoExists = true
-                console.log(`Repository ${fullRepoName} already exists`)
-            } catch (repoError: any) {
-                if (repoError.status === 404) {
-                    // Repo doesn't exist - create it (90% case)
-                    console.log(`Creating repository ${fullRepoName}...`)
-                    await octokit.repos.createForAuthenticatedUser({
+            const checkResponse = await fetch(`https://api.github.com/repos/${fullRepoName}`, {
+                headers: {
+                    'Authorization': `Bearer ${githubToken}`,
+                    'Accept': 'application/vnd.github+json',
+                    'X-GitHub-Api-Version': '2022-11-28'
+                }
+            })
+
+            if (checkResponse.status === 404) {
+                // Repo doesn't exist - create it (90% case)
+                console.log(`Creating repository ${fullRepoName}...`)
+
+                const createResponse = await fetch('https://api.github.com/user/repos', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${githubToken}`,
+                        'Accept': 'application/vnd.github+json',
+                        'X-GitHub-Api-Version': '2022-11-28'
+                    },
+                    body: JSON.stringify({
                         name: finalRepoName,
                         description: `${projectName} - AI-generated project by GitMaxer Enterprise`,
                         private: false,
                         auto_init: true
                     })
-                    console.log(`✅ Repository ${fullRepoName} created successfully`)
-                } else {
-                    throw repoError
+                })
+
+                if (!createResponse.ok) {
+                    const errorData = await createResponse.json()
+                    throw new Error(errorData.message || 'Failed to create repository')
                 }
+
+                console.log(`✅ Repository ${fullRepoName} created successfully`)
+            } else if (checkResponse.ok) {
+                console.log(`Repository ${fullRepoName} already exists`)
+            } else {
+                throw new Error('Failed to check repository status')
             }
         } catch (githubError: any) {
             console.error('GitHub repo check/creation failed:', githubError)
