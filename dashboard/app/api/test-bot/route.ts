@@ -1,59 +1,59 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 300
 
-export async function GET() {
+export async function POST() {
     try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+        // Verify user is authenticated
+        const cookieStore = await cookies()
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    getAll() {
+                        return cookieStore.getAll()
+                    },
+                    setAll() { },
+                },
+            }
+        )
 
-        if (!supabaseUrl || !supabaseKey) {
-            return NextResponse.json({
-                error: 'Missing Supabase credentials',
-                supabaseUrl: supabaseUrl ? '✅' : '❌',
-                supabaseKey: supabaseKey ? '✅' : '❌'
-            }, { status: 500 })
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const supabase = createClient(supabaseUrl, supabaseKey)
+        console.log(`🧪 Manual bot test triggered by user: ${user.id}`)
 
-        // Get all active users
-        const { data: users, error } = await supabase
-            .from('user_settings')
-            .select('*')
-            .eq('pause_bot', false)
-
-        if (error) {
-            return NextResponse.json({
-                error: 'Database error',
-                details: error.message
-            }, { status: 500 })
-        }
-
-        const status = users.map(u => ({
-            username: u.github_username,
-            hasToken: u.github_access_token ? '✅ Yes' : '❌ No',
-            repo: u.repo_name,
-            language: u.preferred_language,
-            minContribs: u.min_contributions,
-            botActive: !u.pause_bot ? '✅ Active' : '❌ Paused'
-        }))
+        // Import and run the bot logic directly
+        const { runBotForUser } = await import('@/utils/bot-runner')
+        const result = await runBotForUser(user.id)
 
         return NextResponse.json({
-            message: 'Bot Status Check',
-            totalUsers: users.length,
-            users: status,
-            cronSchedule: '17:30 UTC daily (11 PM IST)',
-            nextSteps: status.some(u => !u.hasToken.includes('✅'))
-                ? '⚠️ Some users missing GitHub token - they need to sign in with GitHub'
-                : '✅ All users have tokens, bot should work'
+            success: true,
+            message: 'Bot executed successfully',
+            result,
+            timestamp: new Date().toISOString()
         })
 
     } catch (error: any) {
+        console.error('❌ Test bot error:', error)
         return NextResponse.json({
-            error: 'Test failed',
-            details: error.message
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
         }, { status: 500 })
     }
+}
+
+export async function GET() {
+    return NextResponse.json({
+        message: 'Use POST method to trigger bot test',
+        hint: 'This endpoint requires authentication'
+    })
 }

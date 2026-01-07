@@ -22,6 +22,35 @@ export default function Dashboard() {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
     const [toast, setToast] = useState<{ type: 'success' | 'error', message: string } | null>(null)
     const [userPlan, setUserPlan] = useState<string>('free') // Track user's plan
+    const [testingBot, setTestingBot] = useState(false)
+
+    const testBot = async () => {
+        setTestingBot(true)
+        try {
+            const response = await fetch('/api/test-bot', { method: 'POST' })
+            const data = await response.json()
+
+            if (data.success) {
+                showToast('success', data.message || 'Bot test completed successfully!')
+                // Refresh logs
+                if (user) {
+                    const { data: newLogs } = await supabase
+                        .from('commit_logs')
+                        .select('*')
+                        .eq('user_id', user.id)
+                        .order('created_at', { ascending: false })
+                        .limit(10)
+                    if (newLogs) setLogs(newLogs)
+                }
+            } else {
+                showToast('error', data.error || 'Bot test failed')
+            }
+        } catch (error: any) {
+            showToast('error', `Test failed: ${error.message}`)
+        } finally {
+            setTestingBot(false)
+        }
+    }
 
     const [config, setConfig] = useState({
         min_contributions: 1,
@@ -361,6 +390,23 @@ export default function Dashboard() {
                             <Home className="w-4 h-4" />
                             <span className="hidden sm:inline">Home</span>
                         </Link>
+                        <button
+                            onClick={testBot}
+                            disabled={testingBot}
+                            className="px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium bg-[#2ea043] text-white border border-[#3fb950] hover:bg-[#3fb950] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {testingBot ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    <span className="hidden sm:inline">Testing...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Power className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Test Bot</span>
+                                </>
+                            )}
+                        </button>
                         <button onClick={async () => {
                             try {
                                 await signOut()
