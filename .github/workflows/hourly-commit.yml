@@ -1,0 +1,25 @@
+name: ⏰ Hourly Commit Check
+
+on:
+  # Run at the start of every hour
+  schedule:
+    - cron: '0 * * * *'  # Every hour at :00
+  
+  workflow_dispatch:
+
+jobs:
+  hourly-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: 🔔 Hourly Bot Trigger
+        run: |
+          echo "⏰ Hourly check at $(date)"
+          
+          curl -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "X-Trigger-Type: hourly" \
+            "${{ secrets.VERCEL_CRON_URL }}"
+          
+          echo "✅ Hourly trigger completed"

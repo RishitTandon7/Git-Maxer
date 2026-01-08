@@ -1,0 +1,50 @@
+name: 🤖 GitMaxer Auto Commit Bot
+
+on:
+  # Run every 15 minutes (GitHub Actions allows this for FREE!)
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15 minutes
+  
+  # Allow manual triggering from GitHub UI
+  workflow_dispatch:
+  
+  # Trigger from external webhook (for testing)
+  repository_dispatch:
+    types: [trigger-bot]
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: 🚀 Trigger Vercel Cron Endpoint
+        run: |
+          echo "🤖 Triggering GitMaxer bot at $(date)"
+          
+          # Call your Vercel API endpoint
+          response=$(curl -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "User-Agent: github-actions-cron" \
+            -w "\n%{http_code}" \
+            -s \
+            "${{ secrets.VERCEL_CRON_URL }}")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "📊 Response Code: $http_code"
+          echo "📝 Response Body: $body"
+          
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "✅ Bot executed successfully!"
+          else
+            echo "❌ Bot execution failed with code $http_code"
+            exit 1
+          fi
+      
+      - name: 📊 Log Execution
+        if: always()
+        run: |
+          echo "⏰ Execution completed at $(date)"
+          echo "🌍 Timezone: $(date +%Z)"

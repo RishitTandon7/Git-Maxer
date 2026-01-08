@@ -1,0 +1,27 @@
+name: 💎 Daily Premium User Check
+
+on:
+  # Run once per day at midnight IST (18:30 UTC)
+  schedule:
+    - cron: '30 18 * * *'  # 12:00 AM IST
+  
+  workflow_dispatch:
+
+jobs:
+  premium-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 💎 Daily Premium Processing
+        run: |
+          echo "💎 Running daily premium user check at $(date)"
+          
+          # Trigger with special header for premium processing
+          curl -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "X-Trigger-Type: daily-premium" \
+            -H "X-Priority: high" \
+            "${{ secrets.VERCEL_CRON_URL }}"
+          
+          echo "✅ Premium processing completed"
