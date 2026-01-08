@@ -1,15 +1,45 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
+// For browser environments, these MUST be in next.config or .env with NEXT_PUBLIC_ prefix
+// They get bundled at BUILD time, not runtime
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-// Ensure we never pass undefined/empty
-const finalUrl = supabaseUrl && supabaseUrl.length > 0 ? supabaseUrl : 'https://placeholder.supabase.co'
-const finalKey = supabaseAnonKey && supabaseAnonKey.length > 0 ? supabaseAnonKey : 'placeholder'
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('❌ CRITICAL: Supabase environment variables missing!')
+    console.error('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl)
+    console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'EXISTS' : 'MISSING')
+}
 
-export const supabase = createClient(finalUrl, finalKey, {
-    auth: {
-        persistSession: true,
-        autoRefreshToken: true,
+export const supabase = createClient(
+    supabaseUrl || 'https://placeholder.supabase.co',
+    supabaseAnonKey || 'placeholder',
+    {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            flowType: 'pkce',
+        },
+        global: {
+            headers: {
+                'x-application-name': 'gitmacer',
+            },
+        },
+        db: {
+            schema: 'public',
+        },
+        realtime: {
+            params: {
+                eventsPerSecond: 10,
+            },
+        },
     }
-})
+)
+
+// Debug output for browser console
+if (typeof window !== 'undefined') {
+    console.log('🔵 Supabase Client Initialized')
+    console.log('URL:', supabaseUrl?.substring(0, 30) + '...')
+    console.log('Has Key:', !!supabaseAnonKey)
+}
