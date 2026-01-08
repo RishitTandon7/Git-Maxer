@@ -6,13 +6,15 @@ import os
 # MULTI-API-KEY & MULTI-MODEL ROTATION SYSTEM
 # ============================================
 
-# List of all available Gemini models (in preference order)
+# List of ACTUAL available Gemini models (verified from user's API)
+# Ordered by: Speed → Quality → Fallback
 GEMINI_MODELS = [
-    'gemini-2.0-flash-exp',       # Latest experimental (fastest)
-    'gemini-1.5-flash-latest',    # Latest stable flash
-    'gemini-1.5-pro-latest',      # Most capable
-    'gemini-1.5-flash',            # Fallback
-    'gemini-pro',                  # Legacy fallback
+    'gemini-2.5-flash-lite',      # Fastest (10 RPM, 250K TPM) ⚡
+    'gemini-2.5-flash',           # Fast & quality (5 RPM, 250K TPM)
+    'gemini-3-flash',             # Latest gen 3 (5 RPM, 250K TPM)
+    'gemini-2.5-flash-its',       # Multi-modal (3 RPM, 10K TPM)
+    'gemma-3-4b',                 # Open model fallback (30 RPM)
+    'gemma-3-2b',                 # Lighter fallback (30 RPM)
 ]
 
 # Rotation state (persists across function calls using module-level variables)
