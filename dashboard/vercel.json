@@ -4,8 +4,5 @@
       "path": "/api/cron",
       "schedule": "0 18 * * *"
     }
-  ],
-  "_comment_limitation": "Vercel Hobby plan allows only 1 cron job. For unlimited FREE cron jobs, use GitHub Actions (see GITHUB_ACTIONS_SETUP.md) or Cloudflare Workers (see CLOUDFLARE_WORKERS_SETUP.md)",
-  "_comment_github_actions": "GitHub Actions gives you UNLIMITED free cron jobs that can run every minute if needed",
-  "_comment_cloudflare": "Cloudflare Workers also offers unlimited cron triggers with 100,000 free requests/day on edge network"
+  ]
 }
