@@ -18,15 +18,26 @@ export function EnterpriseProjectPanel({ userId, isActive }: { userId: string, i
     }, [userId])
 
     const fetchProject = async () => {
-        const { data } = await supabase
-            .from('projects')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('status', 'in_progress')
-            .single()
+        try {
+            const { data, error } = await supabase
+                .from('projects')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('status', 'in_progress')
+                .single()
 
-        setProject(data)
-        setLoading(false)
+            if (error) {
+                console.warn('Enterprise panel: projects table query failed (expected for non-enterprise users):', error.message)
+                setProject(null)
+            } else {
+                setProject(data)
+            }
+        } catch (err) {
+            console.warn('Enterprise panel error:', err)
+            setProject(null)
+        } finally {
+            setLoading(false)
+        }
     }
 
     const startProject = async () => {
