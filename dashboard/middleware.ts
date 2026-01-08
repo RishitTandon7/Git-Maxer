@@ -2,6 +2,12 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+    // Skip auth check for API routes - they handle their own auth
+    const path = request.nextUrl.pathname
+    if (path.startsWith('/api/')) {
+        return NextResponse.next()
+    }
+
     let response = NextResponse.next({
         request: {
             headers: request.headers,
@@ -27,24 +33,21 @@ export async function middleware(request: NextRequest) {
             }
         )
 
-        // Add timeout wrapper to prevent hanging
+        // Reduced timeout - fail fast (2 seconds instead of 5)
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Supabase Connection Timeout')), 5000)
+            setTimeout(() => reject(new Error('Auth timeout')), 2000)
         )
 
-        // Refreshing session if expired - with timeout protection
+        // Only refresh session, don't spam logs on failure
         await Promise.race([
             supabase.auth.getUser(),
             timeoutPromise
-        ]).catch(error => {
-            // Log error but don't block the request
-            console.error('Middleware auth check error:', error.message)
+        ]).catch(() => {
+            // Silent fail - individual pages handle auth
         })
 
-    } catch (error: any) {
-        // If auth check fails, still allow the request through
-        // The actual auth will be checked on protected pages
-        console.error('Middleware error:', error.message)
+    } catch {
+        // Silent fail - don't spam console
     }
 
     return response
