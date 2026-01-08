@@ -129,9 +129,9 @@ export default function Dashboard() {
     }
 
     const checkUser = async () => {
-        console.log('🔍 checkUser: Starting...')
+        console.log('🔍 checkUser: Starting (using session)...')
 
-        // 1. Critical Check: Enviroment Variables
+        // 1. Critical Check: Environment Variables
         const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
         if (!sbUrl || sbUrl.includes('placeholder')) {
             console.error('❌ CRITICAL: Supabase URL is missing or placeholder')
@@ -141,30 +141,25 @@ export default function Dashboard() {
         }
 
         try {
-            console.log('🔍 checkUser: Calling supabase.auth.getUser()')
+            // FASTER APPROACH: Get session instead of calling auth.getUser()
+            // Middleware already verified auth, so session should exist
+            console.log('🔍 checkUser: Getting session from storage...')
 
-            // Add a race condition to fail fast if Supabase is unreachable (8 sec timeout)
-            const timeOutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Supabase Connection Timeout')), 8000)
-            )
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-            const { data: { user }, error } = await Promise.race([
-                supabase.auth.getUser(),
-                timeOutPromise
-            ]) as any
-
-            console.log('🔍 checkUser: Got response:', { user, error })
-
-            if (error || !user) {
-                console.error('Auth error:', error)
+            if (sessionError || !session?.user) {
+                console.error('Session error:', sessionError)
                 setLoading(false)
                 router.push('/')
                 return
             }
-            console.log('🔍 checkUser: Setting user and calling fetchData')
+
+            const user = session.user
+            console.log('✅ checkUser: Got user from session:', user.id)
+
             setUser(user)
             await fetchData(user.id)
-            console.log('🔍 checkUser: fetchData completed')
+            console.log('✅ checkUser: fetchData completed')
         } catch (error) {
             console.error('Error in checkUser:', error)
             setLoading(false)
