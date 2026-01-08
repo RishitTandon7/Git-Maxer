@@ -28,11 +28,20 @@ export function OwnerStats() {
     const fetchRealStats = async () => {
         setLoading(true)
         try {
-            const res = await fetch('/api/admin/stats')
-            const data = await res.json()
+            // Add timeout to prevent blocking
+            const timeoutPromise = new Promise<any>((_, reject) =>
+                setTimeout(() => reject(new Error('Stats timeout')), 3000)
+            )
+
+            const fetchPromise = fetch('/api/admin/stats').then(res => res.json())
+
+            const data = await Promise.race([fetchPromise, timeoutPromise])
+
             if (!data.error) setStats(data)
         } catch (e) {
-            console.error("Failed to fetch stats")
+            console.error("Failed to fetch stats:", e)
+            // Set empty stats to prevent blocking
+            setStats({ liveUsers: 0, totalRevenue: 0, totalViews: 0, totalUsers: 0 })
         } finally {
             setLoading(false)
         }
