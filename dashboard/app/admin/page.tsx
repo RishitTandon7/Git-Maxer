@@ -54,6 +54,12 @@ export default function AdminPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-xs font-mono text-gray-400 hover:text-white hover:border-white/30 transition-all"
+                        >
+                            Force Refresh
+                        </button>
                         <div className="flex items-center gap-2 px-3 py-1 bg-red-900/20 border border-red-500/20 rounded-full">
                             <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                             <span className="text-xs font-mono text-red-400">LIVE CONNECTION</span>
