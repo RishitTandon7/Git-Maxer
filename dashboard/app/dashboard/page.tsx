@@ -72,13 +72,13 @@ export default function Dashboard() {
 
         const init = async () => {
             try {
-                // Fail-safe: Force loading off after 5 seconds max
+                // Fail-safe: Force loading off after 10 seconds max (increased for slower connections)
                 timeoutId = setTimeout(() => {
                     if (mounted) {
                         console.warn('⚠️ Loading timeout - forcing off')
                         setLoading(false)
                     }
-                }, 5000)
+                }, 10000)
 
                 await checkUser()
             } catch (error) {
@@ -143,9 +143,9 @@ export default function Dashboard() {
         try {
             console.log('🔍 checkUser: Calling supabase.auth.getUser()')
 
-            // Add a race condition to fail fast if Supabase is unreachable
+            // Add a race condition to fail fast if Supabase is unreachable (8 sec timeout)
             const timeOutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Supabase Connection Timeout')), 5000)
+                setTimeout(() => reject(new Error('Supabase Connection Timeout')), 8000)
             )
 
             const { data: { user }, error } = await Promise.race([
