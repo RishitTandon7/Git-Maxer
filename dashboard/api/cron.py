@@ -189,15 +189,21 @@ class handler(BaseHTTPRequestHandler):
                         logs.append(f"Skipping commit for user {username}: Generation failed - {content}")
                         continue
 
-                    # Create file
+                    # Create file with REALISTIC project name
                     # Use the specific language for extension, not 'any'
                     ext = get_extension(lang_for_generation)
-                    file_name = f"daily_contribution_{now_ist.date()}_{now_ist.strftime('%H%M%S')}.{ext}"
+                    
+                    # Import realistic filename generator
+                    from utils.content_generator import get_realistic_filename
+                    project_name = get_realistic_filename(lang_for_generation)
+                    
+                    # Add timestamp to make it unique (optional - remove if you want same names)
+                    file_name = f"{project_name}.{ext}"
                     
                     try:
                         repo.create_file(
                             path=file_name,
-                            message=f"Daily contribution: {now_ist.strftime('%Y-%m-%d')}",
+                            message=f"Add {project_name} implementation",
                             content=content,
                             branch="main"
                         )

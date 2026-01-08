@@ -1,9 +1,14 @@
 name: 🤖 GitMaxer Auto Commit Bot
 
 on:
-  # Run every 15 minutes (GitHub Actions allows this for FREE!)
+  # DISABLED: Run every 15 minutes (causing too many commits)
+  # Uncomment below if you want every-15-min execution:
+  # schedule:
+  #   - cron: '*/15 * * * *'  # Every 15 minutes
+  
+  # Run once daily at midnight IST (18:30 UTC)
   schedule:
-    - cron: '*/15 * * * *'  # Every 15 minutes
+    - cron: '30 18 * * *'  # Once per day at 12 AM IST
   
   # Allow manual triggering from GitHub UI
   workflow_dispatch:

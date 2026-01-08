@@ -1,9 +1,12 @@
-name: ⏰ Hourly Commit Check
+# This workflow is DISABLED to prevent multiple commits per day
+# If you want hourly commits, rename this file to hourly-commit.yml
+
+name: ⏰ Hourly Commit Check (DISABLED)
 
 on:
-  # Run at the start of every hour
-  schedule:
-    - cron: '0 * * * *'  # Every hour at :00
+  # DISABLED - uncomment to enable
+  # schedule:
+  #   - cron: '0 * * * *'  # Every hour at :00
   
   workflow_dispatch:
 
