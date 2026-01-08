@@ -189,21 +189,41 @@ class handler(BaseHTTPRequestHandler):
                         logs.append(f"Skipping commit for user {username}: Generation failed - {content}")
                         continue
 
-                    # Create file with REALISTIC project name
-                    # Use the specific language for extension, not 'any'
+                    # Extract filename from code if available, or generate creative one
+                    # Look for filename in first few lines of code
                     ext = get_extension(lang_for_generation)
+                    file_name = None
                     
-                    # Import realistic filename generator
-                    from utils.content_generator import get_realistic_filename
-                    project_name = get_realistic_filename(lang_for_generation)
+                    # Try to find filename in comments (AI might include it)
+                    for line in content.split('\n')[:5]:
+                        if 'file:' in line.lower() or 'filename:' in line.lower():
+                            # Extract filename from comment
+                            parts = line.lower().split(':')
+                            if len(parts) > 1:
+                                potential_name = parts[1].strip().replace('.py', '').replace('.js', '')
+                                if potential_name and len(potential_name) < 50:
+                                    file_name = f"{potential_name}.{ext}"
+                                    break
                     
-                    # Add timestamp to make it unique (optional - remove if you want same names)
-                    file_name = f"{project_name}.{ext}"
+                    # If no filename found, generate creative one based on content
+                    if not file_name:
+                        # Use hash of content for uniqueness
+                        import hashlib
+                        content_hash = hashlib.md5(content.encode()).hexdigest()[:6]
+                        
+                        # Creative topic-based names
+                        topics = ['tutorial', 'example', 'guide', 'demo', 'learning']
+                        import random
+                        topic = random.choice(topics)
+                        file_name = f"{lang_for_generation}_{topic}_{content_hash}.{ext}"
+                    
+                    # Clean filename
+                    file_name = file_name.replace(' ', '_').replace('-', '_').lower()
                     
                     try:
                         repo.create_file(
                             path=file_name,
-                            message=f"Add {project_name} implementation",
+                            message=f"Add {lang_for_generation} learning example",
                             content=content,
                             branch="main"
                         )
