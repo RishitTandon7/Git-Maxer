@@ -55,9 +55,20 @@ export async function GET(request: Request) {
         const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
 
         if (sessionError) {
-            console.error('Session exchange error:', sessionError)
-            return NextResponse.redirect(`${requestUrl.origin}/?error=auth_failed`)
+            console.error('❌ Session exchange error:', sessionError)
+            return NextResponse.redirect(`${requestUrl.origin}/?error=auth_failed&details=${encodeURIComponent(sessionError.message)}`)
         }
+
+        if (!sessionData?.session) {
+            console.error('❌ No session data after code exchange')
+            return NextResponse.redirect(`${requestUrl.origin}/?error=no_session`)
+        }
+
+        console.log('✅ Session created successfully:', {
+            userId: sessionData.session.user.id,
+            username: sessionData.session.user.user_metadata?.user_name,
+            hasToken: !!sessionData.session.provider_token
+        })
 
         // Capture the provider_token (GitHub access token) immediately
         // This token is ONLY available right after OAuth - it becomes null after refresh
@@ -100,7 +111,7 @@ export async function GET(request: Request) {
                         if (updateError) {
                             console.error('Error updating GitHub token:', updateError)
                         } else {
-                            console.log('GitHub access token updated successfully for user:', userId)
+                            console.log('✅ GitHub access token updated successfully for user:', userId)
                         }
                     } else {
                         // Create new record with the token
@@ -121,7 +132,7 @@ export async function GET(request: Request) {
                         if (insertError) {
                             console.error('Error inserting user settings:', insertError)
                         } else {
-                            console.log('GitHub access token saved for new user:', userId)
+                            console.log('✅ GitHub access token saved for new user:', userId)
                         }
                     }
                 } catch (dbError) {
@@ -136,6 +147,7 @@ export async function GET(request: Request) {
         }
     }
 
-    // URL to redirect to after sign in process completes
-    return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
+    console.log('🔄 Redirecting to /setup (user will be auto-redirected to dashboard if setup exists)')
+    // Redirect to setup - it will auto-redirect to dashboard if settings exist
+    return NextResponse.redirect(`${requestUrl.origin}/setup`)
 }
