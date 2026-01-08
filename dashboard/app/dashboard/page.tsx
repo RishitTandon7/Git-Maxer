@@ -158,8 +158,43 @@ export default function Dashboard() {
             console.log('✅ checkUser: Got user from session:', user.id)
 
             setUser(user)
-            await fetchData(user.id)
-            console.log('✅ checkUser: fetchData completed')
+
+            // Load data with timeout protection - show UI anyway if slow
+            try {
+                const dataPromise = fetchData(user.id)
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('fetchData timeout')), 5000)
+                )
+
+                await Promise.race([dataPromise, timeoutPromise])
+                console.log('✅ checkUser: fetchData completed')
+            } catch (fetchError) {
+                console.warn('⚠️ fetchData slow/failed, showing dashboard anyway:', fetchError)
+                // Show dashboard with default values
+                setConfig({
+                    min_contributions: 1,
+                    pause_bot: false,
+                    github_username: user.user_metadata?.user_name || 'user',
+                    repo_name: 'auto-contributions',
+                    repo_visibility: 'public',
+                    preferred_language: 'any',
+                    commit_time: null
+                })
+                setOriginalConfig({
+                    min_contributions: 1,
+                    pause_bot: false,
+                    github_username: user.user_metadata?.user_name || 'user',
+                    repo_name: 'auto-contributions',
+                    repo_visibility: 'public',
+                    preferred_language: 'any',
+                    commit_time: null
+                })
+                setLoading(false)
+                showToast('error', 'Loading data slowly - using defaults. Try refreshing.')
+
+                // Try loading in background
+                setTimeout(() => fetchData(user.id).catch(() => { }), 1000)
+            }
         } catch (error) {
             console.error('Error in checkUser:', error)
             setLoading(false)
