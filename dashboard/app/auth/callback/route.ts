@@ -98,7 +98,7 @@ export async function GET(request: Request) {
                     }
 
                     if (existingSettings) {
-                        // Update existing record with the new token
+                        // EXISTING USER - Update token and redirect to dashboard
                         const { error: updateError } = await serviceClient
                             .from('user_settings')
                             .update({
@@ -111,15 +111,18 @@ export async function GET(request: Request) {
                         if (updateError) {
                             console.error('Error updating GitHub token:', updateError)
                         } else {
-                            console.log('✅ GitHub access token updated successfully for user:', userId)
+                            console.log('✅ Existing user - token updated, redirecting to dashboard')
                         }
+
+                        // Existing user → dashboard
+                        return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
+
                     } else {
-                        // Create new record with the token
-                        // Use upsert to handle potential race conditions
+                        // NEW USER - Create settings and redirect to setup
                         const { error: insertError } = await serviceClient
                             .from('user_settings')
                             .upsert({
-                                user_id: userId, // Explicitly set user_id
+                                user_id: userId,
                                 github_access_token: providerToken,
                                 github_username: githubUsername || '',
                                 repo_name: 'auto-contributions',
@@ -130,24 +133,29 @@ export async function GET(request: Request) {
                             }, { onConflict: 'user_id' })
 
                         if (insertError) {
-                            console.error('Error inserting user settings:', insertError)
+                            console.error('Error creating user settings:', insertError)
                         } else {
-                            console.log('✅ GitHub access token saved for new user:', userId)
+                            console.log('✅ New user - settings created, redirecting to setup')
                         }
+
+                        // New user → setup
+                        return NextResponse.redirect(`${requestUrl.origin}/setup`)
                     }
                 } catch (dbError) {
-                    console.error('Database error saving GitHub token:', dbError)
-                    // Continue anyway - user can still complete setup
+                    console.error('Database error:', dbError)
+                    // On error, redirect to setup as fallback
+                    return NextResponse.redirect(`${requestUrl.origin}/setup`)
                 }
             } else {
-                console.error('Could not create service client - check SUPABASE_SERVICE_ROLE_KEY env var')
+                console.error('Could not create service client')
+                return NextResponse.redirect(`${requestUrl.origin}/setup`)
             }
         } else {
-            console.warn('No provider_token or userId available after OAuth. Token:', !!providerToken, 'UserId:', !!userId)
+            console.warn('No provider_token or userId available')
+            return NextResponse.redirect(`${requestUrl.origin}/setup`)
         }
     }
 
-    console.log('🔄 Redirecting to /setup (user will be auto-redirected to dashboard if setup exists)')
-    // Redirect to setup - it will auto-redirect to dashboard if settings exist
-    return NextResponse.redirect(`${requestUrl.origin}/setup`)
+    // No code parameter - shouldn't happen but redirect to home
+    return NextResponse.redirect(`${requestUrl.origin}/`)
 }
