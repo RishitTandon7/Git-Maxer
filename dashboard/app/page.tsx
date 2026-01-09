@@ -100,14 +100,6 @@ export default function LoginPage() {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
 
-  // Auto-redirect if already logged in
-  useEffect(() => {
-    if (sessionUser && !authLoading) {
-      console.log('✅ User already logged in, redirecting to dashboard...')
-      router.push('/dashboard')
-    }
-  }, [sessionUser, authLoading, router])
-
   useEffect(() => {
     const handleHashTokens = async () => {
       const hash = window.location.hash
