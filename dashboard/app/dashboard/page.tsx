@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
 
 export default function Dashboard() {
     const router = useRouter()
-    const { signOut } = useAuth()
+    const { user: authUser, userPlan: authUserPlan, loading: authLoading, signOut } = useAuth()
     const [user, setUser] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -65,31 +65,8 @@ export default function Dashboard() {
     const [originalConfig, setOriginalConfig] = useState(config)
     const [logs, setLogs] = useState<any[]>([])
 
-    // Initial data fetch - runs once on mount
+    // Analytics tracking
     useEffect(() => {
-        let mounted = true
-        let timeoutId: NodeJS.Timeout
-
-        const init = async () => {
-            try {
-                // Fail-safe: Force loading off after 10 seconds max (increased for slower connections)
-                timeoutId = setTimeout(() => {
-                    if (mounted) {
-                        console.warn('⚠️ Loading timeout - forcing off')
-                        setLoading(false)
-                    }
-                }, 10000)
-
-                await checkUser()
-            } catch (error) {
-                console.error('Init error:', error)
-                if (mounted) setLoading(false)
-            }
-        }
-
-        init()
-
-        // Track View
         fetch('/api/analytics/track', {
             method: 'POST',
             body: JSON.stringify({
@@ -98,11 +75,6 @@ export default function Dashboard() {
                 country: Intl.DateTimeFormat().resolvedOptions().timeZone.split('/')[0]
             })
         }).catch(() => { })
-
-        return () => {
-            mounted = false
-            if (timeoutId) clearTimeout(timeoutId)
-        }
     }, [])
 
     // Keyboard shortcut - updates when hasUnsavedChanges changes
@@ -128,79 +100,26 @@ export default function Dashboard() {
         setTimeout(() => setToast(null), 3000)
     }
 
-    const checkUser = async () => {
-        console.log('🔍 checkUser: Starting (using session)...')
+    // Use AuthProvider's user instead of doing redundant checks
+    useEffect(() => {
+        if (authLoading) return // Wait for AuthProvider to finish
 
-        // 1. Critical Check: Environment Variables
-        const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-        if (!sbUrl || sbUrl.includes('placeholder')) {
-            console.error('❌ CRITICAL: Supabase URL is missing or placeholder')
-            showToast('error', 'SETUP ERROR: Supabase URL is missing! Check your environment variables.')
+        if (!authUser) {
+            // Not logged in - redirect to home
+            console.log('❌ No user from AuthProvider, redirecting to /')
             setLoading(false)
+            router.push('/')
             return
         }
 
-        try {
-            // FASTER APPROACH: Get session instead of calling auth.getUser()
-            // Middleware already verified auth, so session should exist
-            console.log('🔍 checkUser: Getting session from storage...')
+        // User is logged in via AuthProvider
+        console.log('✅ User from AuthProvider:', authUser.id)
+        setUser(authUser)
+        setUserPlan(authUserPlan || 'free')
 
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-            if (sessionError || !session?.user) {
-                console.error('Session error:', sessionError)
-                setLoading(false)
-                router.push('/')
-                return
-            }
-
-            const user = session.user
-            console.log('✅ checkUser: Got user from session:', user.id)
-
-            setUser(user)
-
-            // Load data with timeout protection - show UI anyway if slow
-            try {
-                const dataPromise = fetchData(user.id)
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('fetchData timeout')), 5000)
-                )
-
-                await Promise.race([dataPromise, timeoutPromise])
-                console.log('✅ checkUser: fetchData completed')
-            } catch (fetchError) {
-                console.warn('⚠️ fetchData slow/failed, showing dashboard anyway:', fetchError)
-                // Show dashboard with default values
-                setConfig({
-                    min_contributions: 1,
-                    pause_bot: false,
-                    github_username: user.user_metadata?.user_name || 'user',
-                    repo_name: 'auto-contributions',
-                    repo_visibility: 'public',
-                    preferred_language: 'any',
-                    commit_time: null
-                })
-                setOriginalConfig({
-                    min_contributions: 1,
-                    pause_bot: false,
-                    github_username: user.user_metadata?.user_name || 'user',
-                    repo_name: 'auto-contributions',
-                    repo_visibility: 'public',
-                    preferred_language: 'any',
-                    commit_time: null
-                })
-                setLoading(false)
-                showToast('error', 'Loading data slowly - using defaults. Try refreshing.')
-
-                // Try loading in background
-                setTimeout(() => fetchData(user.id).catch(() => { }), 1000)
-            }
-        } catch (error) {
-            console.error('Error in checkUser:', error)
-            setLoading(false)
-            router.push('/')
-        }
-    }
+        // Load user data
+        fetchData(authUser.id)
+    }, [authUser, authLoading, authUserPlan, router])
 
     const fetchData = async (userId: string) => {
         try {
