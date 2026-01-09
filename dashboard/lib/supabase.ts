@@ -22,7 +22,6 @@ export const supabase = createClient(
             flowType: 'pkce',
             storage: typeof window !== 'undefined' ? window.localStorage : undefined,
             storageKey: 'gitmacer-auth',
-            // Force cookies for better compatibility with incognito
             debug: typeof window !== 'undefined' && window.location.hostname === 'localhost',
         },
         global: {
@@ -47,7 +46,7 @@ if (typeof window !== 'undefined') {
     console.log('URL:', supabaseUrl?.substring(0, 30) + '...')
     console.log('Has Key:', !!supabaseAnonKey)
 
-    // Test if localStorage is available (might be blocked in incognito)
+    // Test if localStorage is available
     try {
         localStorage.setItem('test', '1')
         localStorage.removeItem('test')
