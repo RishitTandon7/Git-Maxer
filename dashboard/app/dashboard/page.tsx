@@ -477,29 +477,51 @@ export default function Dashboard() {
                                     </div>
 
                                     {/* Daily Commits Slider */}
-                                    <div>
-                                        <label className="text-sm text-[#8b949e] font-medium mb-3 flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Code className="w-4 h-4" />
-                                                Daily Commits
+                                    {/* Daily Commits - Owner Only */}
+                                    {(userPlan === 'owner' || user?.user_metadata?.user_name === 'rishittandon7') ? (
+                                        <div>
+                                            <label className="text-sm text-[#8b949e] font-medium mb-3 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Code className="w-4 h-4" />
+                                                    Daily Commits (Owner Control)
+                                                </div>
+                                                <span className="text-[#c9d1d9] font-bold bg-[#21262d] px-2 py-0.5 rounded text-xs">
+                                                    {config.min_contributions} / day
+                                                </span>
+                                            </label>
+                                            <input
+                                                type="range"
+                                                min="1"
+                                                max="50"
+                                                value={config.min_contributions}
+                                                onChange={(e) => setConfig(prev => ({ ...prev, min_contributions: parseInt(e.target.value) }))}
+                                                className="w-full h-2 bg-[#21262d] rounded-lg appearance-none cursor-pointer accent-[#2ea043]"
+                                            />
+                                            <div className="flex justify-between text-[10px] text-[#8b949e] mt-2 font-mono">
+                                                <span>1</span>
+                                                <span>50</span>
                                             </div>
-                                            <span className="text-[#c9d1d9] font-bold bg-[#21262d] px-2 py-0.5 rounded text-xs">
-                                                {config.min_contributions} / day
-                                            </span>
-                                        </label>
-                                        <input
-                                            type="range"
-                                            min="1"
-                                            max={user?.user_metadata?.user_name === 'rishittandon7' ? "50" : "10"}
-                                            value={config.min_contributions}
-                                            onChange={(e) => setConfig(prev => ({ ...prev, min_contributions: parseInt(e.target.value) }))}
-                                            className="w-full h-2 bg-[#21262d] rounded-lg appearance-none cursor-pointer accent-[#2ea043]"
-                                        />
-                                        <div className="flex justify-between text-[10px] text-[#8b949e] mt-2 font-mono">
-                                            <span>1</span>
-                                            <span>{user?.user_metadata?.user_name === 'rishittandon7' ? "50" : "10"}</span>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="opacity-75">
+                                            <label className="text-sm text-[#8b949e] font-medium mb-3 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Code className="w-4 h-4" />
+                                                    Daily Commits
+                                                </div>
+                                                <span className="text-[#c9d1d9] font-bold bg-[#21262d] px-2 py-0.5 rounded text-xs">
+                                                    1 / day
+                                                </span>
+                                            </label>
+                                            <div className="w-full h-2 bg-[#21262d] rounded-lg relative">
+                                                <div className="absolute left-0 h-full w-[10%] bg-[#2ea043] rounded-lg"></div>
+                                            </div>
+                                            <div className="flex justify-between text-[10px] text-[#8b949e] mt-2">
+                                                <span>🔒 Free Plan: 1 commit/day</span>
+                                                <span className="text-[#58a6ff]">Upgrade for more →</span>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Save */}
                                     <motion.button
