@@ -105,11 +105,24 @@ export default function Dashboard() {
         if (authLoading) return // Wait for AuthProvider to finish
 
         if (!authUser) {
-            // Not logged in - redirect to home
+            // Not logged in - redirect to home (but only once to prevent loops)
             console.log('❌ No user from AuthProvider, redirecting to /')
             setLoading(false)
-            router.push('/')
+
+            // Prevent infinite redirect loop on mobile
+            if (typeof window !== 'undefined') {
+                const hasRedirected = sessionStorage.getItem('dashboard_redirect')
+                if (!hasRedirected) {
+                    sessionStorage.setItem('dashboard_redirect', 'true')
+                    router.push('/')
+                }
+            }
             return
+        }
+
+        // Clear redirect flag if user is logged in
+        if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('dashboard_redirect')
         }
 
         // User is logged in via AuthProvider
