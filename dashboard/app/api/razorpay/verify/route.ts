@@ -12,8 +12,11 @@ const supabase = createClient(
 
 
 export async function POST(req: NextRequest) {
+    let razorpay_payment_id = '';
+
     try {
-        const { razorpay_payment_id, razorpay_order_id, razorpay_signature, plan } = await req.json();
+        const { razorpay_payment_id: paymentId, razorpay_order_id, razorpay_signature, plan } = await req.json();
+        razorpay_payment_id = paymentId; // Store for refund if needed
 
         // 1. Verify Signature
         const body = razorpay_order_id + "|" + razorpay_payment_id;
@@ -50,7 +53,7 @@ export async function POST(req: NextRequest) {
 
         if (userError || !user) {
             console.error("User authentication error:", userError);
-            return NextResponse.json({ error: "User not authenticated" }, { status: 401 });
+            throw new Error("User not authenticated");
         }
 
 
@@ -70,7 +73,7 @@ export async function POST(req: NextRequest) {
 
         if (updateError) {
             console.error("DB Update Error:", updateError);
-            return NextResponse.json({ error: "Failed to update user plan" }, { status: 500 });
+            throw new Error("Failed to update user plan");
         }
 
         // 5. Log the payment success
@@ -96,7 +99,47 @@ export async function POST(req: NextRequest) {
         });
 
     } catch (error: any) {
-        console.error("Payment Verification Error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error("❌ Payment Verification Error:", error);
+
+        // AUTO-REFUND: If verification failed, initiate refund
+        if (razorpay_payment_id) {
+            try {
+                console.log("🔄 Initiating automatic refund for failed verification...");
+
+                // Trigger refund via Razorpay API
+                const refundResponse = await fetch(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}/refund`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Basic ${Buffer.from(`${process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID}:6njwAIIYZ5xw1HBm5l9Zu75D`).toString('base64')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        speed: 'optimum',
+                        notes: {
+                            reason: 'Account upgrade failed - automatic refund',
+                            error: error.message
+                        }
+                    })
+                });
+
+                if (refundResponse.ok) {
+                    const refundData = await refundResponse.json();
+                    console.log("✅ Auto-refund successful:", refundData.id);
+
+                    return NextResponse.json({
+                        error: "Verification failed. Full refund has been initiated automatically. Money will be returned in 5-7 business days.",
+                        refund_id: refundData.id
+                    }, { status: 500 });
+                } else {
+                    console.error("❌ Auto-refund failed:", await refundResponse.text());
+                }
+            } catch (refundError) {
+                console.error("❌ Auto-refund error:", refundError);
+            }
+        }
+
+        return NextResponse.json({
+            error: error.message + ". Please contact support for refund."
+        }, { status: 500 });
     }
 }
