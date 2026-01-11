@@ -22,37 +22,36 @@ function getServiceClient() {
 
 export async function POST(request: NextRequest) {
     try {
-        // 1. Verify Authentication
-        const cookieStore = await cookies()
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                cookies: {
-                    getAll() {
-                        return cookieStore.getAll()
-                    },
-                    setAll(cookiesToSet: any[]) {
-                        // We don't need to set cookies here, just read them for auth
-                    },
-                },
-            }
-        )
+        const body = await request.json()
 
-        const { data: { session }, error: authError } = await supabase.auth.getSession()
-        const user = session?.user
+        // Get user ID from request
+        const userId = body.id || body.user_id
 
-        if (authError || !user) {
+        if (!userId) {
+            return NextResponse.json({ error: 'User ID required' }, { status: 400 })
+        }
+
+        // Use service client to verify user exists
+        const serviceClient = getServiceClient()
+        if (!serviceClient) {
+            return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
+        }
+
+        // Verify this user exists in auth.users
+        const { data: authUser, error: authError } = await serviceClient.auth.admin.getUserById(userId)
+
+        if (authError || !authUser) {
+            console.error('User verification failed:', authError)
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const body = await request.json()
+        console.log('✅ User verified:', userId)
 
         // 2. Validate/Prepare Data
         // Ensure we only touch the authenticated user's data
         const settingsData: Record<string, any> = {
-            id: user.id,          // Primary key - same as auth user id
-            user_id: user.id,     // Foreign key - references auth.users.id
+            id: userId,          // Primary key - same as auth user id
+            user_id: userId,     // Foreign key - references auth.users.id
             github_username: body.github_username,
             repo_name: body.repo_name,
             repo_visibility: body.repo_visibility,
@@ -69,17 +68,11 @@ export async function POST(request: NextRequest) {
             settingsData.github_access_token = body.github_access_token
         }
 
-        // 3. Perform DB Operation using Service Client
-        const serviceClient = getServiceClient()
-        if (!serviceClient) {
-            return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
-        }
-
-        // Check if this is a new user by querying existing settings
+        // 3. Check if this is a new user by querying existing settings
         const { data: existing } = await serviceClient
             .from('user_settings')
             .select('plan_type, is_paid')
-            .eq('id', user.id)
+            .eq('id', userId)
             .single()
 
         // If user already exists, preserve their plan and paid status (don't overwrite with free)
