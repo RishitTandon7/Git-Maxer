@@ -288,9 +288,21 @@ export default function LoginPage() {
             className="flex flex-col sm:flex-row items-center gap-6 w-full justify-center pt-2"
           >
             {sessionUser ? (
-              <Link href="/dashboard" className={`h-14 px-8 rounded-full font-bold text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 w-full sm:w-auto justify-center ${theme.buttonPrimary}`}>
-                <span>Go to Dashboard</span>
-              </Link>
+              <>
+                <Link href="/dashboard" className={`h-14 px-8 rounded-full font-bold text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 w-full sm:w-auto justify-center ${theme.buttonPrimary}`}>
+                  <span>Go to Dashboard</span>
+                </Link>
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut()
+                    router.push('/')
+                    window.location.reload()
+                  }}
+                  className={`h-14 px-6 rounded-full font-medium text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2 backdrop-blur-sm ${theme.buttonSecondary}`}
+                >
+                  <span>Logout</span>
+                </button>
+              </>
             ) : (
               <>
                 <button
