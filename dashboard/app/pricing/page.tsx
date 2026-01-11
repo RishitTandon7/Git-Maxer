@@ -273,8 +273,11 @@ export default function PricingPage() {
                             )}
                             <div className="relative z-10">
                                 <h3 className="text-2xl font-bold mb-2 text-blue-400">⭐ Pro</h3>
-                                <div className="text-5xl font-bold mb-1 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-400 to-blue-500">₹30</div>
-                                <p className="text-blue-400/70 text-sm font-medium">Per Month</p>
+                                <div className="flex items-center gap-3 mb-1">
+                                    <span className="text-2xl text-blue-400/50 line-through">₹60</span>
+                                    <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-400 to-blue-500">₹30</div>
+                                </div>
+                                <p className="text-blue-400/70 text-sm font-medium">Per Month • 50% OFF</p>
                             </div>
                             <ul className="space-y-3 text-sm text-blue-50 relative z-10">
                                 <li className="flex items-center gap-2"><span className="text-blue-400 text-lg">✓</span> <b className="text-blue-200">1 Commit, 1 Repo Daily</b></li>
@@ -298,6 +301,105 @@ export default function PricingPage() {
                                     userPlan === 'pro' ? "✓ Current Plan" :
                                         userPlan === 'owner' ? "👑 Included in Owner" :
                                             sessionUser ? "Upgrade to Pro" : "🔒 Login to Upgrade"}
+                            </button>
+                        </motion.div>
+
+                        {/* LeetCode Plan - Purple/Green Code Theme */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3 }}
+                            whileHover={{ scale: 1.05, y: -5 }}
+                            className="bg-gradient-to-b from-purple-500/10 to-[#0A0A0A] border border-purple-500/30 rounded-3xl p-8 space-y-6 relative overflow-hidden"
+                            style={{
+                                boxShadow: '0 0 40px rgba(147, 51, 234, 0.2), 0 0 80px rgba(147, 51, 234, 0.1)',
+                            }}
+                        >
+                            {/* Animated Code Rain Effect */}
+                            <motion.div
+                                className="absolute inset-0 pointer-events-none"
+                                style={{
+                                    background: 'linear-gradient(180deg, transparent 0%, rgba(147, 51, 234, 0.05) 50%, transparent 100%)',
+                                }}
+                                animate={{
+                                    backgroundPosition: ['0% 0%', '0% 100%'],
+                                }}
+                                transition={{
+                                    duration: 5,
+                                    repeat: Infinity,
+                                    ease: "linear"
+                                }}
+                            />
+
+                            {/* Floating Code Symbols */}
+                            {['{', '}', '<', '>', '/', '\\'].map((symbol, i) => (
+                                <motion.div
+                                    key={i}
+                                    className="absolute text-purple-400/20 font-mono text-2xl pointer-events-none"
+                                    style={{
+                                        left: `${15 + i * 15}%`,
+                                        bottom: 0,
+                                    }}
+                                    animate={{
+                                        y: [-20, -300],
+                                        opacity: [0, 0.5, 0],
+                                    }}
+                                    transition={{
+                                        duration: 4 + i * 0.5,
+                                        repeat: Infinity,
+                                        delay: i * 0.3,
+                                    }}
+                                >
+                                    {symbol}
+                                </motion.div>
+                            ))}
+
+                            {userPlan === 'leetcode' || userPlan === 'owner' ? (
+                                <div className="absolute top-4 right-4 px-3 py-1 bg-green-500/20 border border-green-500 rounded-full text-xs text-green-400 font-bold z-10">
+                                    ✓ {userPlan === 'owner' ? 'Included' : 'Current Plan'}
+                                </div>
+                            ) : (
+                                <motion.div
+                                    animate={{
+                                        boxShadow: [
+                                            '0 0 10px rgba(147, 51, 234, 0.3)',
+                                            '0 0 20px rgba(147, 51, 234, 0.6)',
+                                            '0 0 10px rgba(147, 51, 234, 0.3)',
+                                        ]
+                                    }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                    className="absolute top-4 right-4 px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-xs text-purple-400 z-10"
+                                >
+                                    💻 DSA Master
+                                </motion.div>
+                            )}
+                            <div className="relative z-10">
+                                <h3 className="text-2xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-500">💻 LeetCode</h3>
+                                <div className="flex items-center gap-3 mb-1">
+                                    <span className="text-2xl text-purple-400/50 line-through">₹120</span>
+                                    <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-pink-300 to-purple-400">₹60</div>
+                                </div>
+                                <p className="text-purple-400/70 text-sm font-medium">Per Month • 50% OFF</p>
+                            </div>
+                            <ul className="space-y-3 text-sm text-purple-50 relative z-10">
+                                <li className="flex items-center gap-2"><span className="text-purple-400 text-lg">✓</span> <b className="text-purple-200">Daily LeetCode Solutions</b></li>
+                                <li className="flex items-center gap-2"><span className="text-pink-400 text-lg">→</span> <span className="text-purple-100">Separate "LeetCode-Solutions" Repo</span></li>
+                                <li className="flex items-center gap-2"><span className="text-purple-400 text-lg">★</span> <b className="text-purple-200">Multi-Language Support</b></li>
+                                <li className="flex items-center gap-2"><span className="text-green-400 text-lg">✓</span> <span className="text-purple-100">Python, Java, C++, JavaScript</span></li>
+                                <li className="flex items-center gap-2"><span className="text-purple-400 text-lg">🎯</span> <b className="text-green-200">Easy → Medium → Hard</b></li>
+                            </ul>
+                            <button
+                                onClick={() => handlePayment('leetcode', 6000)}
+                                disabled={loading || userPlan === 'leetcode' || userPlan === 'owner'}
+                                className={`w-full py-3 rounded-full font-bold transition-all relative z-10 ${userPlan === 'leetcode' || userPlan === 'owner'
+                                    ? 'bg-purple-600/30 text-purple-500 border border-purple-500/50 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/30'
+                                    }`}
+                            >
+                                {loading ? "Processing..." :
+                                    userPlan === 'leetcode' ? "✓ Current Plan" :
+                                        userPlan === 'owner' ? "👑 Included in Owner" :
+                                            sessionUser ? "Get LeetCode Plan" : "🔒 Login to Upgrade"}
                             </button>
                         </motion.div>
 
@@ -370,8 +472,11 @@ export default function PricingPage() {
                             )}
                             <div className="relative z-10">
                                 <h3 className="text-2xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600">💼 Enterprise</h3>
-                                <div className="text-5xl font-bold mb-1 text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 relative z-10">₹90</div>
-                                <p className="text-amber-500/60 text-sm font-medium relative z-10">Per Month</p>
+                                <div className="flex items-center gap-3 mb-1">
+                                    <span className="text-2xl text-amber-400/50 line-through">₹180</span>
+                                    <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500">₹90</div>
+                                </div>
+                                <p className="text-amber-500/60 text-sm font-medium relative z-10">Per Month • 50% OFF</p>
                             </div>
                             <ul className="space-y-3 text-sm text-gray-300 relative z-10">
                                 <li className="flex items-center gap-2"><span className="text-amber-400 text-lg">⚡</span> <b className="text-white">Project Mode (15 Days)</b></li>
@@ -391,102 +496,6 @@ export default function PricingPage() {
                                     userPlan === 'enterprise' ? "✓ Current Plan" :
                                         userPlan === 'owner' ? "👑 Included in Owner" :
                                             sessionUser ? "Get Enterprise" : "🔒 Login to Upgrade"}
-                            </button>
-                        </motion.div>
-
-                        {/* LeetCode Plan - Purple/Green Code Theme */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
-                            whileHover={{ scale: 1.05, y: -5 }}
-                            className="bg-gradient-to-b from-purple-500/10 to-[#0A0A0A] border border-purple-500/30 rounded-3xl p-8 space-y-6 relative overflow-hidden"
-                            style={{
-                                boxShadow: '0 0 40px rgba(147, 51, 234, 0.2), 0 0 80px rgba(147, 51, 234, 0.1)',
-                            }}
-                        >
-                            {/* Animated Code Rain Effect */}
-                            <motion.div
-                                className="absolute inset-0 pointer-events-none"
-                                style={{
-                                    background: 'linear-gradient(180deg, transparent 0%, rgba(147, 51, 234, 0.05) 50%, transparent 100%)',
-                                }}
-                                animate={{
-                                    backgroundPosition: ['0% 0%', '0% 100%'],
-                                }}
-                                transition={{
-                                    duration: 5,
-                                    repeat: Infinity,
-                                    ease: "linear"
-                                }}
-                            />
-
-                            {/* Floating Code Symbols */}
-                            {['{', '}', '<', '>', '/', '\\'].map((symbol, i) => (
-                                <motion.div
-                                    key={i}
-                                    className="absolute text-purple-400/20 font-mono text-2xl pointer-events-none"
-                                    style={{
-                                        left: `${15 + i * 15}%`,
-                                        bottom: 0,
-                                    }}
-                                    animate={{
-                                        y: [-20, -300],
-                                        opacity: [0, 0.5, 0],
-                                    }}
-                                    transition={{
-                                        duration: 4 + i * 0.5,
-                                        repeat: Infinity,
-                                        delay: i * 0.3,
-                                    }}
-                                >
-                                    {symbol}
-                                </motion.div>
-                            ))}
-
-                            {userPlan === 'leetcode' || userPlan === 'owner' ? (
-                                <div className="absolute top-4 right-4 px-3 py-1 bg-green-500/20 border border-green-500 rounded-full text-xs text-green-400 font-bold z-10">
-                                    ✓ {userPlan === 'owner' ? 'Included' : 'Current Plan'}
-                                </div>
-                            ) : (
-                                <motion.div
-                                    animate={{
-                                        boxShadow: [
-                                            '0 0 10px rgba(147, 51, 234, 0.3)',
-                                            '0 0 20px rgba(147, 51, 234, 0.6)',
-                                            '0 0 10px rgba(147, 51, 234, 0.3)',
-                                        ]
-                                    }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="absolute top-4 right-4 px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-xs text-purple-400 z-10"
-                                >
-                                    💻 DSA Master
-                                </motion.div>
-                            )}
-                            <div className="relative z-10">
-                                <h3 className="text-2xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-500">💻 LeetCode</h3>
-                                <div className="text-5xl font-bold mb-1 text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-pink-300 to-purple-400">₹50</div>
-                                <p className="text-purple-400/70 text-sm font-medium">Per Month</p>
-                            </div>
-                            <ul className="space-y-3 text-sm text-purple-50 relative z-10">
-                                <li className="flex items-center gap-2"><span className="text-purple-400 text-lg">✓</span> <b className="text-purple-200">Daily LeetCode Solutions</b></li>
-                                <li className="flex items-center gap-2"><span className="text-pink-400 text-lg">→</span> <span className="text-purple-100">Separate "LeetCode-Solutions" Repo</span></li>
-                                <li className="flex items-center gap-2"><span className="text-purple-400 text-lg">★</span> <b className="text-purple-200">Multi-Language Support</b></li>
-                                <li className="flex items-center gap-2"><span className="text-green-400 text-lg">✓</span> <span className="text-purple-100">Python, Java, C++, JavaScript</span></li>
-                                <li className="flex items-center gap-2"><span className="text-purple-400 text-lg">🎯</span> <b className="text-green-200">Easy → Medium → Hard</b></li>
-                            </ul>
-                            <button
-                                onClick={() => handlePayment('leetcode', 5000)}
-                                disabled={loading || userPlan === 'leetcode' || userPlan === 'owner'}
-                                className={`w-full py-3 rounded-full font-bold transition-all relative z-10 ${userPlan === 'leetcode' || userPlan === 'owner'
-                                    ? 'bg-purple-600/30 text-purple-500 border border-purple-500/50 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:shadow-lg hover:shadow-purple-500/30'
-                                    }`}
-                            >
-                                {loading ? "Processing..." :
-                                    userPlan === 'leetcode' ? "✓ Current Plan" :
-                                        userPlan === 'owner' ? "👑 Included in Owner" :
-                                            sessionUser ? "Get LeetCode Plan" : "🔒 Login to Upgrade"}
                             </button>
                         </motion.div>
 
