@@ -16,13 +16,16 @@ export async function POST(req: Request) {
             key_secret: process.env.RAZORPAY_KEY_SECRET || '',
         });
 
-        const { amount, plan } = await req.json();
+        const { amount, plan, user_id } = await req.json();
 
         const options = {
             amount: amount, // Received from frontend (3000 or 9000)
             currency: "INR",
             receipt: "receipt_" + Math.random().toString(36).substring(7),
-            notes: { plan }, // Store plan in notes for reference
+            notes: {
+                plan,
+                user_id  // Store user_id to bypass cookie issues during verification
+            },
         };
 
         const order = await razorpay.orders.create(options);

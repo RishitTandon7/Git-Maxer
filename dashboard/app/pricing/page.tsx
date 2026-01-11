@@ -51,7 +51,11 @@ export default function PricingPage() {
             // 1. Create Order
             const res = await fetch('/api/razorpay/order', {
                 method: 'POST',
-                body: JSON.stringify({ amount, plan }), // Send plan type
+                body: JSON.stringify({
+                    amount,
+                    plan,
+                    user_id: sessionUser.id  // Pass user_id to bypass cookie issues
+                }),
             })
 
             const contentType = res.headers.get("content-type");

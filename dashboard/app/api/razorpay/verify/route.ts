@@ -31,30 +31,26 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid Signature" }, { status: 400 });
         }
 
-        // 2. Get authenticated user from cookies
-        const cookieStore = await cookies();
-        const supabaseClient = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder',
-            {
-                cookies: {
-                    getAll() {
-                        return cookieStore.getAll();
-                    },
-                    setAll(cookiesToSet: any[]) {
-                        // We don't need to set cookies here
-                    },
-                },
+        // 2. Fetch order details from Razorpay to get user_id from notes
+        // This eliminates the need for cookies entirely!
+        const orderResponse = await fetch(`https://api.razorpay.com/v1/orders/${razorpay_order_id}`, {
+            headers: {
+                'Authorization': `Basic ${Buffer.from(`${process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID}:6njwAIIYZ5xw1HBm5l9Zu75D`).toString('base64')}`
             }
-        );
+        });
 
-        const { data: { session }, error: userError } = await supabaseClient.auth.getSession();
-        const user = session?.user;
-
-        if (userError || !user) {
-            console.error("User authentication error:", userError);
-            throw new Error("User not authenticated");
+        if (!orderResponse.ok) {
+            throw new Error("Failed to fetch order details from Razorpay");
         }
+
+        const orderData = await orderResponse.json();
+        const user_id = orderData.notes?.user_id;
+
+        if (!user_id) {
+            throw new Error("User ID not found in order notes");
+        }
+
+        console.log(`✅ User ID retrieved from order: ${user_id}`);
 
 
         // 3. Calculate plan expiry (30 days from now)
@@ -69,7 +65,7 @@ export async function POST(req: NextRequest) {
                 is_paid: true,
                 plan_expiry: planExpiry.toISOString(),
             })
-            .eq('id', user.id);
+            .eq('id', user_id);
 
         if (updateError) {
             console.error("DB Update Error:", updateError);
@@ -78,7 +74,7 @@ export async function POST(req: NextRequest) {
 
         // 5. Log the payment success
         const { error: paymentError } = await supabase.from('payments').insert({
-            user_id: user.id,
+            user_id: user_id,
             order_id: razorpay_order_id,
             payment_id: razorpay_payment_id,
             amount: plan === 'pro' ? 3000 : 9000,
@@ -90,7 +86,7 @@ export async function POST(req: NextRequest) {
             // Don't fail the request if logging fails
         }
 
-        console.log(`✅ Payment successful for user ${user.id} - Plan: ${plan}`);
+        console.log(`✅ Payment successful for user ${user_id} - Plan: ${plan}`);
 
         return NextResponse.json({
             success: true,
