@@ -71,6 +71,7 @@ export default function SetupPage() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include', // CRITICAL: Send cookies for authentication
                 body: JSON.stringify(settingsData),
             })
 
