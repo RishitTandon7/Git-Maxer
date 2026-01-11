@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { Octokit } from '@octokit/rest'
 
 export async function POST(request: Request) {
     try {
@@ -13,25 +12,28 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid plan type' }, { status: 400 })
         }
 
-        const octokit = new Octokit({ auth: githubToken })
+        const headers = {
+            'Authorization': `token ${githubToken}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+        }
 
         // 1. Get user info
-        const { data: user } = await octokit.users.getAuthenticated()
+        const userRes = await fetch('https://api.github.com/user', { headers })
+        if (!userRes.ok) throw new Error('Failed to fetch GitHub user')
+        const user = await userRes.json()
         const username = user.login
 
         // 2. Check if repo exists
-        try {
-            await octokit.repos.get({ owner: username, repo: repoName })
-            console.log(`Repo ${repoName} already exists`)
+        const checkRes = await fetch(`https://api.github.com/repos/${username}/${repoName}`, { headers })
 
-            // If exists, just return success
+        if (checkRes.ok) {
+            console.log(`Repo ${repoName} already exists`)
             return NextResponse.json({
                 success: true,
                 message: 'Repository already exists',
                 repo_url: `https://github.com/${username}/${repoName}`
             })
-        } catch (error: any) {
-            if (error.status !== 404) throw error
         }
 
         // 3. Create repo if not found
@@ -48,23 +50,44 @@ export async function POST(request: Request) {
             content = `# 💼 Enterprise Project\n\nThis is a professional project repository managed by GitMaxer Enterprise.\n\n## 🚀 Project Overview\n\nAuto-generated enterprise-grade code contributions.`
         }
 
-        const { data: repo } = await octokit.repos.createForAuthenticatedUser({
-            name: repoName,
-            description,
-            private: false, // Make it public by default for visibility (can be changed later)
-            auto_init: true
+        const createRes = await fetch('https://api.github.com/user/repos', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                name: repoName,
+                description,
+                private: false,
+                auto_init: true
+            })
         })
 
-        // 4. Add initial README (if auto_init didn't do enough or we want custom content)
-        // Note: auto_init=true creates an empty README. We can update it.
+        if (!createRes.ok) {
+            const err = await createRes.json()
+            throw new Error(`Failed to create repo: ${err.message}`)
+        }
+
+        const repo = await createRes.json()
+
+        // 4. Add initial README
+        // We need to wait a moment for the repo to propagate or check SHA if auto_init created one
         try {
-            await octokit.repos.createOrUpdateFileContents({
-                owner: username,
-                repo: repoName,
-                path: 'README.md',
-                message: 'docs: Add initial README',
-                content: Buffer.from(content).toString('base64'),
-                sha: await getFileSha(octokit, username, repoName, 'README.md')
+            // Get SHA of existing README (created by auto_init)
+            const readmeRes = await fetch(`https://api.github.com/repos/${username}/${repoName}/contents/README.md`, { headers })
+            let sha = undefined
+            if (readmeRes.ok) {
+                const data = await readmeRes.json()
+                sha = data.sha
+            }
+
+            // Update/Create README
+            await fetch(`https://api.github.com/repos/${username}/${repoName}/contents/README.md`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                    message: 'docs: Add initial README',
+                    content: Buffer.from(content).toString('base64'),
+                    sha
+                })
             })
         } catch (e) {
             console.warn('Failed to update README:', e)
@@ -79,14 +102,5 @@ export async function POST(request: Request) {
     } catch (error: any) {
         console.error('API Error:', error)
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 })
-    }
-}
-
-async function getFileSha(octokit: any, owner: string, repo: string, path: string) {
-    try {
-        const { data } = await octokit.repos.getContent({ owner, repo, path })
-        return (data as any).sha
-    } catch (e) {
-        return undefined
     }
 }
