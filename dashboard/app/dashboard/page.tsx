@@ -117,8 +117,18 @@ export default function Dashboard() {
         setUser(authUser)
         setUserPlan(authUserPlan || 'free')
 
+        // Fail-safe: Force loading off after 5 seconds max
+        const timeoutId = setTimeout(() => {
+            console.warn('⚠️ Dashboard timeout - forcing loading off')
+            setLoading(false)
+        }, 5000)
+
         // Load user data
-        fetchData(authUser.id)
+        fetchData(authUser.id).finally(() => {
+            clearTimeout(timeoutId)
+        })
+
+        return () => clearTimeout(timeoutId)
     }, [authUser, authLoading, authUserPlan, router])
 
     const fetchData = async (userId: string) => {
