@@ -833,67 +833,82 @@ function RoyalTheme() {
 
 function MatrixTheme() {
     return (
-        <div className="absolute inset-0 bg-[#0a0a0a] overflow-hidden font-sans">
-            {/* Background Gradients - LeetCode Dark Mode Style */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-[#ffa116]/10 via-[#0a0a0a] to-[#0a0a0a]" />
+        <div className="absolute inset-0 bg-[#0a0a0a] overflow-hidden font-mono">
+            {/* 1. Deep Background Gradient */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_#ffa11620_0%,_#0a0a0a_60%,_#0a0a0a_100%)]" />
 
-            {/* Subtle Grid */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#333_1px,transparent_1px),linear-gradient(to_bottom,#333_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20" />
+            {/* 2. Moving Grid Floor */}
+            <motion.div
+                className="absolute inset-0 opacity-20"
+                style={{
+                    backgroundImage: 'linear-gradient(rgba(255, 161, 22, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 161, 22, 0.1) 1px, transparent 1px)',
+                    backgroundSize: '40px 40px',
+                    transform: 'perspective(500px) rotateX(20deg) scale(1.5)'
+                }}
+                animate={{
+                    backgroundPosition: ['0px 0px', '0px 40px']
+                }}
+                transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "linear"
+                }}
+            />
 
-            {/* Floating LeetCode Symbols (Orange) */}
-            {[...Array(20)].map((_, i) => (
+            {/* 3. Orange Code Rain */}
+            {[...Array(30)].map((_, i) => (
                 <motion.div
-                    key={i}
-                    className="absolute text-[#ffa116]/20 font-bold"
-                    initial={{ y: 1000, opacity: 0, rotate: 0 }}
+                    key={`rain-${i}`}
+                    className="absolute top-0 text-[#ffa116] text-opacity-40 font-bold whitespace-pre writing-vertical-rl text-[10px] sm:text-xs select-none pointer-events-none"
+                    initial={{ y: -1000, opacity: 0 }}
                     animate={{
-                        y: -200,
-                        opacity: [0, 0.4, 0],
-                        rotate: [0, 180]
+                        y: ['-100%', '150%'],
+                        opacity: [0, 0.8, 0]
                     }}
                     transition={{
-                        duration: Math.random() * 20 + 15,
+                        duration: Math.random() * 5 + 3,
+                        repeat: Infinity,
+                        delay: Math.random() * 5,
+                        ease: "linear"
+                    }}
+                    style={{
+                        left: `${Math.random() * 100}%`,
+                        textShadow: '0 0 8px rgba(255, 161, 22, 0.4)'
+                    }}
+                >
+                    {Array.from({ length: 15 }).map(() =>
+                        String.fromCharCode(0x30A0 + Math.random() * 96)
+                    ).join('')}
+                </motion.div>
+            ))}
+
+            {/* 4. Floating Tech Keywords */}
+            {[...Array(12)].map((_, i) => (
+                <motion.div
+                    key={`word-${i}`}
+                    className="absolute text-[#ffa116]/30 font-bold text-sm sm:text-lg select-none blur-[0.5px]"
+                    initial={{ y: 800, opacity: 0 }}
+                    animate={{
+                        y: -100,
+                        opacity: [0, 0.6, 0],
+                        scale: [0.8, 1, 0.8]
+                    }}
+                    transition={{
+                        duration: Math.random() * 15 + 10,
                         repeat: Infinity,
                         delay: Math.random() * 10,
                         ease: "linear"
                     }}
                     style={{
-                        left: `${Math.random() * 100}%`,
-                        fontSize: `${Math.random() * 30 + 20}px`
+                        left: `${Math.random() * 90}%`,
                     }}
                 >
-                    {['{ }', '</>', '[ ]', 'LC', 'Code', 'Easy', 'Hard', '()'][Math.floor(Math.random() * 8)]}
+                    {['Solved', 'Accepted', 'Runtime: 0ms', '100% Beats', 'O(n)', 'Hard', 'Medium', '</>', '{ code }'][Math.floor(Math.random() * 9)]}
                 </motion.div>
             ))}
 
-            {/* Animated Orange Glow Orbs */}
-            {[...Array(3)].map((_, i) => (
-                <motion.div
-                    key={`orb-${i}`}
-                    className="absolute rounded-full bg-[#ffa116] blur-[100px] opacity-10"
-                    style={{
-                        width: '300px',
-                        height: '300px',
-                    }}
-                    animate={{
-                        x: [
-                            Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
-                            Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000)
-                        ],
-                        y: [
-                            Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800),
-                            Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800)
-                        ],
-                        scale: [1, 1.2, 1]
-                    }}
-                    transition={{
-                        duration: 20,
-                        repeat: Infinity,
-                        repeatType: "reverse",
-                        ease: "easeInOut"
-                    }}
-                />
-            ))}
+            {/* 5. Vignette Overlay */}
+            <div className="absolute inset-0 bg-[radial-gradient(transparent_0%,#000000_100%)] opacity-80" />
         </div>
     )
 }
