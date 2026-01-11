@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
             }
         );
 
-        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+        const { data: { session }, error: userError } = await supabaseClient.auth.getSession();
+        const user = session?.user;
 
         if (userError || !user) {
             console.error("User authentication error:", userError);
