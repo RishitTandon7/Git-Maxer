@@ -80,83 +80,66 @@ export async function GET(request: Request) {
 
         if (providerToken && userId) {
             // Use service role client to bypass RLS for token storage
-            // This ensures it works in Vercel's serverless environment
             const serviceClient = getServiceClient()
 
             if (serviceClient) {
                 try {
-                    // Check if user settings exist (using 'id' as primary key)
-                    const { data: existingSettings, error: fetchError } = await serviceClient
+                    // Try to UPDATE first (safest if user exists)
+                    const { data, error: updateError } = await serviceClient
                         .from('user_settings')
-                        .select('id, github_username')
+                        .update({
+                            github_access_token: providerToken,
+                            github_username: githubUsername,
+                            updated_at: new Date().toISOString()
+                        })
                         .eq('id', userId)
-                        .single()
+                        .select('id')
 
-                    if (fetchError && fetchError.code !== 'PGRST116') {
-                        // PGRST116 = no rows found, which is fine for new users
-                        console.error('Error fetching user settings:', fetchError)
-                    }
-
-                    if (existingSettings) {
-                        // EXISTING USER - Update token and redirect to dashboard
-                        const { error: updateError } = await serviceClient
-                            .from('user_settings')
-                            .update({
-                                github_access_token: providerToken,
-                                github_username: githubUsername || existingSettings.github_username,
-                                updated_at: new Date().toISOString()
-                            })
-                            .eq('id', userId)
-
-                        if (updateError) {
-                            console.error('Error updating GitHub token:', updateError)
-                        } else {
-                            console.log('✅ Existing user - token updated, redirecting to dashboard')
-                        }
-
-                        // Existing user → dashboard
+                    if (!updateError && data && data.length > 0) {
+                        console.log('✅ Existing user - token updated')
                         return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
-
-                    } else {
-                        // NEW USER - Create settings and redirect to setup
-                        const { error: insertError } = await serviceClient
-                            .from('user_settings')
-                            .upsert({
-                                id: userId,
-                                user_id: userId,
-                                github_access_token: providerToken,
-                                github_username: githubUsername || '',
-                                repo_name: 'auto-contributions',
-                                repo_visibility: 'public',
-                                preferred_language: 'any',
-                                min_contributions: 1,
-                                pause_bot: true
-                            }, { onConflict: 'id' })
-
-                        if (insertError) {
-                            console.error('Error creating user settings:', insertError)
-                        } else {
-                            console.log('✅ New user - settings created, redirecting to setup')
-                        }
-
-                        // New user → setup
-                        return NextResponse.redirect(`${requestUrl.origin}/setup`)
                     }
-                } catch (dbError) {
+
+                    // If update failed (likely user doesn't exist), try INSERT
+                    // We include both id and user_id to cover schema variations
+                    const { error: insertError } = await serviceClient
+                        .from('user_settings')
+                        .insert({
+                            id: userId,           // Key for RLS
+                            user_id: userId,      // Legacy column support
+                            github_access_token: providerToken,
+                            github_username: githubUsername || '',
+                            repo_name: 'auto-contributions',
+                            repo_visibility: 'public',
+                            preferred_language: 'any',
+                            min_contributions: 1,
+                            pause_bot: true
+                        })
+
+                    if (insertError) {
+                        console.error('Error creating user settings:', insertError)
+                        // If insert failed, it might be because user_id column is missing or duplicate key
+                        // Redirect to setup with debug info
+                        return NextResponse.redirect(`${requestUrl.origin}/setup?error=insert_failed&details=${encodeURIComponent(insertError.message)}`)
+                    }
+
+                    console.log('✅ New user - settings created')
+                    return NextResponse.redirect(`${requestUrl.origin}/setup?new_user=true`)
+
+                } catch (dbError: any) {
                     console.error('Database error:', dbError)
-                    // On error, redirect to setup as fallback
-                    return NextResponse.redirect(`${requestUrl.origin}/setup`)
+                    return NextResponse.redirect(`${requestUrl.origin}/setup?error=db_exception&details=${encodeURIComponent(dbError.message || 'Unknown error')}`)
                 }
             } else {
                 console.error('Could not create service client')
-                return NextResponse.redirect(`${requestUrl.origin}/setup`)
+                return NextResponse.redirect(`${requestUrl.origin}/setup?error=service_client_failed`)
             }
         } else {
             console.warn('No provider_token or userId available')
-            return NextResponse.redirect(`${requestUrl.origin}/setup`)
+            return NextResponse.redirect(`${requestUrl.origin}/setup?error=missing_token`)
         }
     }
 
     // No code parameter - shouldn't happen but redirect to home
-    return NextResponse.redirect(`${requestUrl.origin}/`)
+    return NextResponse.redirect(`${requestUrl.origin}/?error=no_code`)
 }
