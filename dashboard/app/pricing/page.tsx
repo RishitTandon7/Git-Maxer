@@ -233,7 +233,7 @@ export default function PricingPage() {
                         >
                             {/* Animated Glow Effect */}
                             <motion.div
-                                className="absolute inset-0 rounded-3xl"
+                                className="absolute inset-0 rounded-3xl pointer-events-none"
                                 style={{
                                     background: 'radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.15), transparent 70%)',
                                 }}
@@ -310,7 +310,7 @@ export default function PricingPage() {
                         >
                             {/* Animated Shimmer Effect */}
                             <motion.div
-                                className="absolute inset-0"
+                                className="absolute inset-0 pointer-events-none"
                                 style={{
                                     background: 'linear-gradient(45deg, transparent 30%, rgba(245, 158, 11, 0.1) 50%, transparent 70%)',
                                     backgroundSize: '200% 200%',
@@ -329,7 +329,7 @@ export default function PricingPage() {
                             {[...Array(5)].map((_, i) => (
                                 <motion.div
                                     key={i}
-                                    className="absolute w-1 h-1 bg-amber-400 rounded-full"
+                                    className="absolute w-1 h-1 bg-amber-400 rounded-full pointer-events-none"
                                     style={{
                                         left: `${20 + i * 15}%`,
                                         bottom: 0,
