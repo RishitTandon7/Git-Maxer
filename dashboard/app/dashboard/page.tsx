@@ -277,7 +277,7 @@ export default function Dashboard() {
     ]
 
     if (loading) return (
-        <div className="min-h-screen bg-[#0d1117] flex items-center justify-center">
+        <div key="loading" className="min-h-screen bg-[#0d1117] flex items-center justify-center">
             <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#58a6ff] mx-auto mb-4"></div>
                 <p className="text-[#8b949e]">Loading dashboard...</p>
@@ -286,7 +286,7 @@ export default function Dashboard() {
     )
 
     return (
-        <div className="min-h-screen bg-[#0d1117] text-white relative overflow-hidden">
+        <div key="dashboard" className="min-h-screen bg-[#0d1117] text-white relative overflow-hidden">
             {/* Toast */}
             <AnimatePresence>
                 {toast && (
