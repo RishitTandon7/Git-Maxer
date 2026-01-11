@@ -8,6 +8,7 @@ import { Settings, Activity, Power, Save, History, User, Code, Clock, Languages,
 import Link from 'next/link'
 import { OwnerStats } from './OwnerStats'
 import { EnterpriseProjectPanel } from './EnterpriseProjectPanel'
+import { RepoSetupModal } from './RepoSetupModal'
 import { useAuth } from '../providers/AuthProvider'
 
 // Force dynamic rendering to avoid prerendering issues with Supabase
@@ -23,6 +24,10 @@ export default function Dashboard() {
     const [toast, setToast] = useState<{ type: 'success' | 'error', message: string } | null>(null)
     const [userPlan, setUserPlan] = useState<string>('free') // Track user's plan
     const [testingBot, setTestingBot] = useState(false)
+    const [showRepoSetup, setShowRepoSetup] = useState(false)
+    const [leetcodeRepo, setLeetcodeRepo] = useState<string | null>(null)
+    const [enterpriseRepo, setEnterpriseRepo] = useState<string | null>(null)
+
 
     const testBot = async () => {
         setTestingBot(true)
