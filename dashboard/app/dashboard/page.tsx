@@ -57,6 +57,58 @@ export default function Dashboard() {
         }
     }
 
+    const handleRepoSetup = async (repoName: string, autoCreate: boolean) => {
+        if (!user) return
+
+        try {
+            // If auto-create, call API to create the repo
+            if (autoCreate) {
+                // Get provider token from session
+                const { data: { session } } = await supabase.auth.getSession()
+                const githubToken = session?.provider_token
+
+                if (!githubToken) {
+                    throw new Error('Could not retrieve GitHub token. Please try logging out and back in.')
+                }
+
+                const response = await fetch('/api/create-leetcode-repo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        repoName,
+                        userId: user.id,
+                        planType: userPlan,
+                        githubToken // Pass token to API
+                    })
+                })
+
+                const data = await response.json()
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create repository')
+                }
+
+                console.log('✅ Repository created:', data.repo_url)
+            }
+
+            // Save repo name to database
+            const { error } = await supabase
+                .from('user_settings')
+                .update({ leetcode_repo: repoName })
+                .eq('id', user.id)
+
+            if (error) throw error
+
+            setLeetcodeRepo(repoName)
+            setShowRepoSetup(false)
+            showToast('success', `Repository "${repoName}" ${autoCreate ? 'created and' : ''} linked successfully!`)
+
+        } catch (error: any) {
+            console.error('Repo setup error:', error)
+            throw new Error(error.message || 'Failed to setup repository')
+        }
+    }
+
+
     const [config, setConfig] = useState({
         min_contributions: 1,
         pause_bot: false,
@@ -194,6 +246,17 @@ export default function Dashboard() {
             setConfig(configData)
             setOriginalConfig(configData)
             setUserPlan(settings.plan_type || 'free')
+
+            // Load LeetCode repo if user has LeetCode plan
+            if (settings.leetcode_repo) {
+                setLeetcodeRepo(settings.leetcode_repo)
+            }
+
+            // Check if LeetCode/Enterprise user needs to setup repo
+            if (settings.plan_type === 'leetcode' && !settings.leetcode_repo) {
+                console.log('🎯 LeetCode user without repo - showing setup modal')
+                setTimeout(() => setShowRepoSetup(true), 1000) // Delay to let dashboard load first
+            }
 
             // Sync with localStorage to keep AuthProvider in sync on next load
             if (settings.plan_type) {
@@ -658,6 +721,17 @@ export default function Dashboard() {
                 )}
             </div>
 
+            {/* Repository Setup Modal */}
+            <AnimatePresence>
+                {showRepoSetup && (
+                    <RepoSetupModal
+                        onClose={() => setShowRepoSetup(false)}
+                        onSetup={handleRepoSetup}
+                        planType={userPlan as 'leetcode' | 'enterprise'}
+                    />
+                )}
+            </AnimatePresence>
+
             {/* Mobile Nav */}
             <nav className="lg:hidden fixed top-0 w-full z-40 bg-[#0d1117] border-b border-[#30363d] px-4 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -687,6 +761,7 @@ function ThemeBackground({ plan }: { plan: string }) {
     if (plan === 'owner') return <RoyalTheme />
     if (plan === 'pro') return <CyberTheme />
     if (plan === 'enterprise') return <GoldenTheme />
+    if (plan === 'leetcode') return <MatrixTheme />
 
     // Default Green/Dark Theme
     return (
@@ -748,6 +823,74 @@ function RoyalTheme() {
                         width: Math.random() * 4 + 2 + 'px',
                         height: Math.random() * 4 + 2 + 'px',
                         boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)'
+                    }}
+                />
+            ))}
+        </div>
+    )
+}
+
+
+function MatrixTheme() {
+    return (
+        <div className="absolute inset-0 bg-[#0a0a0a] overflow-hidden font-sans">
+            {/* Background Gradients - LeetCode Dark Mode Style */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-[#ffa116]/10 via-[#0a0a0a] to-[#0a0a0a]" />
+
+            {/* Subtle Grid */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#333_1px,transparent_1px),linear-gradient(to_bottom,#333_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20" />
+
+            {/* Floating LeetCode Symbols (Orange) */}
+            {[...Array(20)].map((_, i) => (
+                <motion.div
+                    key={i}
+                    className="absolute text-[#ffa116]/20 font-bold"
+                    initial={{ y: 1000, opacity: 0, rotate: 0 }}
+                    animate={{
+                        y: -200,
+                        opacity: [0, 0.4, 0],
+                        rotate: [0, 180]
+                    }}
+                    transition={{
+                        duration: Math.random() * 20 + 15,
+                        repeat: Infinity,
+                        delay: Math.random() * 10,
+                        ease: "linear"
+                    }}
+                    style={{
+                        left: `${Math.random() * 100}%`,
+                        fontSize: `${Math.random() * 30 + 20}px`
+                    }}
+                >
+                    {['{ }', '</>', '[ ]', 'LC', 'Code', 'Easy', 'Hard', '()'][Math.floor(Math.random() * 8)]}
+                </motion.div>
+            ))}
+
+            {/* Animated Orange Glow Orbs */}
+            {[...Array(3)].map((_, i) => (
+                <motion.div
+                    key={`orb-${i}`}
+                    className="absolute rounded-full bg-[#ffa116] blur-[100px] opacity-10"
+                    style={{
+                        width: '300px',
+                        height: '300px',
+                    }}
+                    animate={{
+                        x: [
+                            Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
+                            Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000)
+                        ],
+                        y: [
+                            Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800),
+                            Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800)
+                        ],
+                        scale: [1, 1.2, 1]
+                    }}
+                    transition={{
+                        duration: 20,
+                        repeat: Infinity,
+                        repeatType: "reverse",
+                        ease: "easeInOut"
                     }}
                 />
             ))}

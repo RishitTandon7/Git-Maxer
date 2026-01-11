@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, GitBranch, Sparkles } from 'lucide-react'
+import { X, GitBranch, Sparkles, Code } from 'lucide-react'
 
 interface RepoSetupModalProps {
     onClose: () => void
@@ -11,6 +11,7 @@ interface RepoSetupModalProps {
 }
 
 export function RepoSetupModal({ onClose, onSetup, planType }: RepoSetupModalProps) {
+    // ... (state logic remains same)
     const [repoName, setRepoName] = useState(
         planType === 'leetcode' ? 'LeetCode-Solutions' : 'MyProject'
     )
@@ -61,17 +62,17 @@ export function RepoSetupModal({ onClose, onSetup, planType }: RepoSetupModalPro
                 exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
                 className={`bg-gradient-to-b ${isLeetCode
-                        ? 'from-purple-900/90 to-black'
+                        ? 'from-[#1a1a1a] to-black'
                         : 'from-amber-900/90 to-black'
                     } border ${isLeetCode
-                        ? 'border-purple-500/50'
+                        ? 'border-[#ffa116]/30'
                         : 'border-amber-500/50'
                     } rounded-2xl p-8 max-w-md w-full relative overflow-hidden`}
             >
                 {/* Animated background */}
                 <motion.div
                     className={`absolute inset-0 opacity-20 ${isLeetCode
-                            ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20'
+                            ? 'bg-[radial-gradient(circle_at_top,#ffa116_0%,transparent_70%)] opacity-10'
                             : 'bg-gradient-to-br from-amber-500/20 to-yellow-500/20'
                         }`}
                     animate={{
@@ -87,7 +88,7 @@ export function RepoSetupModal({ onClose, onSetup, planType }: RepoSetupModalPro
                 {/* Close button */}
                 <button
                     onClick={onClose}
-                    className={`absolute top-4 right-4 ${isLeetCode ? 'text-purple-400 hover:text-purple-300' : 'text-amber-400 hover:text-amber-300'
+                    className={`absolute top-4 right-4 ${isLeetCode ? 'text-[#ffa116] hover:text-white' : 'text-amber-400 hover:text-amber-300'
                         } transition-colors`}
                 >
                     <X size={24} />
@@ -95,10 +96,10 @@ export function RepoSetupModal({ onClose, onSetup, planType }: RepoSetupModalPro
 
                 <div className="relative z-10">
                     {/* Icon */}
-                    <div className={`w-16 h-16 rounded-full ${isLeetCode ? 'bg-purple-500/20' : 'bg-amber-500/20'
+                    <div className={`w-16 h-16 rounded-full ${isLeetCode ? 'bg-[#ffa116]/10' : 'bg-amber-500/20'
                         } flex items-center justify-center mb-4`}>
                         {isLeetCode ? (
-                            <Sparkles className="text-purple-400" size={32} />
+                            <Code className="text-[#ffa116]" size={32} />
                         ) : (
                             <GitBranch className="text-amber-400" size={32} />
                         )}
@@ -106,10 +107,14 @@ export function RepoSetupModal({ onClose, onSetup, planType }: RepoSetupModalPro
 
                     {/* Title */}
                     <h2 className={`text-2xl font-bold mb-2 ${isLeetCode
-                            ? 'text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400'
+                            ? 'text-white'
                             : 'text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-400'
                         }`}>
-                        {isLeetCode ? '💻 Setup LeetCode Repo' : '💼 Setup Project Repo'}
+                        {isLeetCode ? (
+                            <span className="flex items-center gap-2">
+                                <span className="text-[#ffa116]">LeetCode</span> Setup
+                            </span>
+                        ) : '💼 Setup Project Repo'}
                     </h2>
 
                     <p className="text-gray-300 mb-6">
@@ -120,7 +125,7 @@ export function RepoSetupModal({ onClose, onSetup, planType }: RepoSetupModalPro
 
                     {/* Auto-create option */}
                     <div className={`mb-4 p-4 rounded-lg border ${isLeetCode
-                            ? 'bg-purple-500/10 border-purple-500/30'
+                            ? 'bg-[#ffa116]/5 border-[#ffa116]/20'
                             : 'bg-amber-500/10 border-amber-500/30'
                         }`}>
                         <label className="flex items-center gap-3 cursor-pointer">
@@ -128,7 +133,9 @@ export function RepoSetupModal({ onClose, onSetup, planType }: RepoSetupModalPro
                                 type="checkbox"
                                 checked={autoCreate}
                                 onChange={(e) => setAutoCreate(e.target.checked)}
-                                className={`w-5 h-5 rounded ${isLeetCode ? 'accent-purple-500' : 'accent-amber-500'
+                                className={`w-5 h-5 rounded ${isLeetCode
+                                        ? 'accent-[#ffa116]'
+                                        : 'accent-amber-500'
                                     }`}
                             />
                             <div>
@@ -152,9 +159,9 @@ export function RepoSetupModal({ onClose, onSetup, planType }: RepoSetupModalPro
                             value={repoName}
                             onChange={(e) => setRepoName(e.target.value)}
                             placeholder={defaultRepoName}
-                            className={`w-full px-4 py-3 bg-black/50 border ${isLeetCode ? 'border-purple-500/30' : 'border-amber-500/30'
-                                } rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-${isLeetCode ? 'purple' : 'amber'
-                                }-500 transition-colors`}
+                            className={`w-full px-4 py-3 bg-black/50 border ${isLeetCode ? 'border-[#ffa116]/30' : 'border-amber-500/30'
+                                } rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-${isLeetCode ? 'white' : 'amber-500'
+                                } transition-colors`}
                         />
                         <p className="text-xs text-gray-500 mt-2">
                             {autoCreate
@@ -182,9 +189,9 @@ export function RepoSetupModal({ onClose, onSetup, planType }: RepoSetupModalPro
                             onClick={handleSubmit}
                             disabled={loading}
                             className={`flex-1 px-4 py-3 ${isLeetCode
-                                    ? 'bg-gradient-to-r from-purple-500 to-pink-600'
-                                    : 'bg-gradient-to-r from-amber-500 to-yellow-600'
-                                } rounded-lg text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50`}
+                                    ? 'bg-[#ffa116] hover:bg-[#ffa116]/90 text-black'
+                                    : 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white'
+                                } rounded-lg font-bold transition-opacity disabled:opacity-50`}
                         >
                             {loading ? 'Setting up...' : 'Continue'}
                         </button>
