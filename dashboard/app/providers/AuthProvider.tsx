@@ -21,12 +21,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        // FAIL-SAFE: Force loading off after 3 seconds no matter what
+        const failsafeTimeout = setTimeout(() => {
+            if (loading) {
+                console.warn('⚠️ AuthProvider timeout - forcing loading off')
+                setLoading(false)
+            }
+        }, 3000)
+
         // Check active session
         const initializeAuth = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession()
+                console.log('🔄 AuthProvider: Initializing...')
+                const { data: { session }, error } = await supabase.auth.getSession()
+
+                if (error) {
+                    console.error('❌ AuthProvider: getSession error:', error)
+                    setLoading(false)
+                    return
+                }
 
                 if (session?.user) {
+                    console.log('✅ AuthProvider: Session found for', session.user.email)
                     setUser(session.user)
 
                     // INSTANT Owner check (no DB delay)
@@ -43,28 +59,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     }
 
                     // Background fetch from DB to update cache
-                    const { data: settings } = await supabase
-                        .from('user_settings')
-                        .select('plan_type')
-                        .eq('id', session.user.id)
-                        .single()
+                    try {
+                        const { data: settings } = await supabase
+                            .from('user_settings')
+                            .select('plan_type')
+                            .eq('id', session.user.id)
+                            .single()
 
-                    if (settings?.plan_type) {
-                        // Owner always stays owner
-                        if (session.user.user_metadata?.user_name === 'rishittandon7') {
-                            setUserPlan('owner')
-                            localStorage.setItem('userPlan', 'owner')
-                        } else {
-                            setUserPlan(settings.plan_type as PlanType)
-                            localStorage.setItem('userPlan', settings.plan_type)
-                            console.log('🎯 Auth: Plan from DB:', settings.plan_type)
+                        if (settings?.plan_type) {
+                            // Owner always stays owner
+                            if (session.user.user_metadata?.user_name === 'rishittandon7') {
+                                setUserPlan('owner')
+                                localStorage.setItem('userPlan', 'owner')
+                            } else {
+                                setUserPlan(settings.plan_type as PlanType)
+                                localStorage.setItem('userPlan', settings.plan_type)
+                                console.log('🎯 Auth: Plan from DB:', settings.plan_type)
+                            }
                         }
+                    } catch (dbError) {
+                        console.error('DB fetch error:', dbError)
                     }
+                } else {
+                    console.log('ℹ️ AuthProvider: No session found')
                 }
             } catch (error) {
                 console.error('Auth initialization error:', error)
             } finally {
                 setLoading(false)
+                clearTimeout(failsafeTimeout)
             }
         }
 
@@ -89,15 +112,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     localStorage.setItem('userPlan', 'owner')
                 } else {
                     // Fetch plan for non-owners
-                    const { data: settings } = await supabase
-                        .from('user_settings')
-                        .select('plan_type')
-                        .eq('id', session.user.id)
-                        .single()
+                    try {
+                        const { data: settings } = await supabase
+                            .from('user_settings')
+                            .select('plan_type')
+                            .eq('id', session.user.id)
+                            .single()
 
-                    if (settings?.plan_type) {
-                        setUserPlan(settings.plan_type as PlanType)
-                        localStorage.setItem('userPlan', settings.plan_type)
+                        if (settings?.plan_type) {
+                            setUserPlan(settings.plan_type as PlanType)
+                            localStorage.setItem('userPlan', settings.plan_type)
+                        }
+                    } catch (err) {
+                        console.error('Error fetching plan:', err)
                     }
                 }
             } else {
@@ -107,7 +134,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         })
 
-        return () => subscription.unsubscribe()
+        return () => {
+            clearTimeout(failsafeTimeout)
+            subscription.unsubscribe()
+        }
     }, [])
 
     const signOut = async () => {
