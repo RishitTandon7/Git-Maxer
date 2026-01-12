@@ -1,7 +1,6 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 
 // Create a service role client that bypasses RLS for database operations
 function getServiceClient() {
@@ -21,15 +20,16 @@ function getServiceClient() {
     })
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
     const requestUrl = new URL(request.url)
     const code = requestUrl.searchParams.get('code')
 
-    if (code) {
-        const cookieStore = await cookies()
+    // Log all cookies for debugging
+    console.log('🍪 Auth Callback - Cookies received:', request.cookies.getAll().map(c => c.name))
 
-        // Collect cookies that need to be set on response
-        const cookiesToSetOnResponse: { name: string, value: string, options: CookieOptions }[] = []
+    if (code) {
+        // Create response that we'll modify with cookies
+        let response = NextResponse.redirect(`${requestUrl.origin}/dashboard`)
 
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,19 +37,13 @@ export async function GET(request: Request) {
             {
                 cookies: {
                     getAll() {
-                        return cookieStore.getAll()
+                        return request.cookies.getAll()
                     },
-                    setAll(cookiesToSet: { name: string, value: string, options: CookieOptions }[]) {
-                        try {
-                            cookiesToSet.forEach(({ name, value, options }) => {
-                                cookieStore.set(name, value, options)
-                                // Also store for response headers
-                                cookiesToSetOnResponse.push({ name, value, options })
-                            })
-                        } catch {
-                            // Server Component context - store for response
-                            cookiesToSet.forEach(cookie => cookiesToSetOnResponse.push(cookie))
-                        }
+                    setAll(cookiesToSet) {
+                        cookiesToSet.forEach(({ name, value, options }) => {
+                            // Set cookie on the response
+                            response.cookies.set(name, value, options)
+                        })
                     },
                 },
             }
@@ -75,22 +69,11 @@ export async function GET(request: Request) {
         })
 
         // Capture the provider_token (GitHub access token) immediately
-        const providerToken = sessionData?.session?.provider_token
-        const userId = sessionData?.session?.user?.id
-        const githubUsername = sessionData?.session?.user?.user_metadata?.user_name
+        const providerToken = sessionData.session.provider_token
+        const userId = sessionData.session.user.id
+        const githubUsername = sessionData.session.user.user_metadata?.user_name
 
         console.log('OAuth callback - userId:', userId, 'hasToken:', !!providerToken, 'username:', githubUsername)
-
-        // Helper to create redirect with cookies
-        const createRedirectWithCookies = (url: string) => {
-            const response = NextResponse.redirect(url)
-            // Apply all cookies to the response using Supabase's options
-            // DO NOT override with httpOnly - browser client needs to read these
-            cookiesToSetOnResponse.forEach(({ name, value, options }) => {
-                response.cookies.set(name, value, options)
-            })
-            return response
-        }
 
         if (providerToken && userId) {
             const serviceClient = getServiceClient()
@@ -109,8 +92,8 @@ export async function GET(request: Request) {
                         .select('id')
 
                     if (!updateError && data && data.length > 0) {
-                        console.log('✅ Existing user - token updated')
-                        return createRedirectWithCookies(`${requestUrl.origin}/dashboard`)
+                        console.log('✅ Existing user - token updated, redirecting to dashboard')
+                        return response // Already set to redirect to dashboard
                     }
 
                     // If update failed (user doesn't exist), try INSERT
@@ -130,23 +113,29 @@ export async function GET(request: Request) {
 
                     if (insertError) {
                         console.error('Error creating user settings:', insertError)
-                        return createRedirectWithCookies(`${requestUrl.origin}/setup?error=insert_failed&details=${encodeURIComponent(insertError.message)}`)
+                        // Still redirect to setup - they can complete setup there
+                        response = NextResponse.redirect(`${requestUrl.origin}/setup?error=insert_failed`)
+                        return response
                     }
 
-                    console.log('✅ New user - settings created')
-                    return createRedirectWithCookies(`${requestUrl.origin}/setup?new_user=true`)
+                    console.log('✅ New user - settings created, redirecting to setup')
+                    response = NextResponse.redirect(`${requestUrl.origin}/setup?new_user=true`)
+                    return response
 
                 } catch (dbError: any) {
                     console.error('Database error:', dbError)
-                    return createRedirectWithCookies(`${requestUrl.origin}/setup?error=db_exception&details=${encodeURIComponent(dbError.message || 'Unknown error')}`)
+                    response = NextResponse.redirect(`${requestUrl.origin}/setup?error=db_exception`)
+                    return response
                 }
             } else {
                 console.error('Could not create service client')
-                return createRedirectWithCookies(`${requestUrl.origin}/setup?error=service_client_failed`)
+                response = NextResponse.redirect(`${requestUrl.origin}/setup?error=service_client_failed`)
+                return response
             }
         } else {
             console.warn('No provider_token or userId available')
-            return createRedirectWithCookies(`${requestUrl.origin}/setup?error=missing_token`)
+            // Session exists but no token - still logged in, go to dashboard
+            return response
         }
     }
 
