@@ -1,4 +1,4 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -7,10 +7,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error('❌ Supabase env vars missing!')
 }
 
-// Use createBrowserClient for proper cookie handling in Next.js App Router
-export const supabase = createBrowserClient(
+// SIMPLEST possible setup - just works
+export const supabase = createClient(
     supabaseUrl || 'https://placeholder.supabase.co',
-    supabaseAnonKey || 'placeholder'
+    supabaseAnonKey || 'placeholder',
+    {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+        },
+    }
 )
 
 if (typeof window !== 'undefined') {
