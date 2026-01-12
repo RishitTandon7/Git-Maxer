@@ -136,39 +136,27 @@ export default function Dashboard() {
         const startTime = Date.now()
 
         try {
-            // Wrap query in timeout to prevent infinite hang
-            const queryPromise = supabase
-                .from('user_settings')
-                .select('*')
-                .eq('id', userId)
-                .single()
+            // Use server-side API to fetch settings (bypasses client RLS issues)
+            const response = await fetch(`/api/user-settings?userId=${userId}`)
+            const result = await response.json()
 
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Database query timeout (3s)')), 3000)
-            )
+            console.log(`📊 Settings query took ${Date.now() - startTime}ms via API`)
 
-            const result = await Promise.race([queryPromise, timeoutPromise]) as any
-            const { data: settings, error: settingsError } = result
-
-            console.log(`📊 Settings query took ${Date.now() - startTime}ms`)
-
-            console.log('Settings query result:', { settings, settingsError, userId })
-
-            // ONLY redirect to setup if user is brand new (no database record)
-            if (settingsError?.code === 'PGRST116') {
-                console.log('New user detected (PGRST116), redirecting to setup')
-                setLoading(false)
-                router.push('/setup')
-                return
+            if (!response.ok) {
+                // Check if user doesn't exist
+                if (result.code === 'PGRST116') {
+                    console.log('New user detected (PGRST116), redirecting to setup')
+                    setLoading(false)
+                    router.push('/setup')
+                    return
+                }
+                throw new Error(result.error || 'Failed to fetch settings')
             }
 
-            // For ANY other error, throw it so we can see what's wrong
-            if (settingsError) {
-                console.error('Database error (NOT a new user):', settingsError)
-                throw new Error(`Database query failed: ${settingsError.message || JSON.stringify(settingsError)}`)
-            }
+            const settings = result.settings
+            console.log('Settings from API:', settings)
 
-            // Check if settings are incomplete (shouldn't happen for existing users)
+            // Check if settings are incomplete
             if (!settings || !settings.github_username) {
                 console.warn('User has record but incomplete settings:', settings)
                 setLoading(false)
