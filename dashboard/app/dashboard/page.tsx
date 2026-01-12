@@ -117,11 +117,11 @@ export default function Dashboard() {
         setUser(authUser)
         setUserPlan(authUserPlan || 'free')
 
-        // Fail-safe: Force loading off after 2 seconds max
+        // Fail-safe: Force loading off after 5 seconds max
         const timeoutId = setTimeout(() => {
             console.warn('⚠️ Dashboard timeout - forcing loading off')
             setLoading(false)
-        }, 2000)
+        }, 5000)
 
         // Load user data
         fetchData(authUser.id).finally(() => {
