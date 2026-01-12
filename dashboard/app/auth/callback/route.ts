@@ -39,10 +39,10 @@ export async function GET(request: NextRequest) {
                     getAll() {
                         return request.cookies.getAll()
                     },
-                    setAll(cookiesToSet) {
-                        cookiesToSet.forEach(({ name, value, options }) => {
+                    setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+                        cookiesToSet.forEach(({ name, value, options }: { name: string; value: string; options?: Record<string, unknown> }) => {
                             // Set cookie on the response
-                            response.cookies.set(name, value, options)
+                            response.cookies.set(name, value, options as any)
                         })
                     },
                 },

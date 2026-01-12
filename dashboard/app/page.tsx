@@ -104,7 +104,12 @@ export default function LoginPage() {
     const handleHashTokens = async () => {
       const hash = window.location.hash
       if (hash && hash.includes('access_token')) {
-        // Hash handling logic
+        // Implicit flow returns tokens in URL hash
+        // Supabase client will automatically pick these up
+        // Clear the hash and redirect to dashboard
+        console.log('🔑 Detected access_token in hash, redirecting to dashboard')
+        window.history.replaceState(null, '', window.location.pathname)
+        router.push('/dashboard')
       }
     }
     handleHashTokens()
@@ -132,7 +137,8 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        // Redirect to landing page - implicit flow returns tokens in URL hash
+        redirectTo: window.location.origin,
         scopes: provider === 'github' ? 'repo' : undefined,
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
