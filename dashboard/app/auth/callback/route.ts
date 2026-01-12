@@ -4,7 +4,6 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 // Create a service role client that bypasses RLS for database operations
-// This is needed because the route handler client has limited permissions in serverless environments
 function getServiceClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -28,6 +27,10 @@ export async function GET(request: Request) {
 
     if (code) {
         const cookieStore = await cookies()
+
+        // Collect cookies that need to be set on response
+        const cookiesToSetOnResponse: { name: string, value: string, options: CookieOptions }[] = []
+
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -38,13 +41,14 @@ export async function GET(request: Request) {
                     },
                     setAll(cookiesToSet: { name: string, value: string, options: CookieOptions }[]) {
                         try {
-                            cookiesToSet.forEach(({ name, value, options }) =>
+                            cookiesToSet.forEach(({ name, value, options }) => {
                                 cookieStore.set(name, value, options)
-                            )
+                                // Also store for response headers
+                                cookiesToSetOnResponse.push({ name, value, options })
+                            })
                         } catch {
-                            // The `setAll` method was called from a Server Component.
-                            // This can be ignored if you have middleware refreshing
-                            // user sessions.
+                            // Server Component context - store for response
+                            cookiesToSet.forEach(cookie => cookiesToSetOnResponse.push(cookie))
                         }
                     },
                 },
@@ -71,15 +75,30 @@ export async function GET(request: Request) {
         })
 
         // Capture the provider_token (GitHub access token) immediately
-        // This token is ONLY available right after OAuth - it becomes null after refresh
         const providerToken = sessionData?.session?.provider_token
         const userId = sessionData?.session?.user?.id
         const githubUsername = sessionData?.session?.user?.user_metadata?.user_name
 
         console.log('OAuth callback - userId:', userId, 'hasToken:', !!providerToken, 'username:', githubUsername)
 
+        // Helper to create redirect with cookies
+        const createRedirectWithCookies = (url: string) => {
+            const response = NextResponse.redirect(url)
+            // Apply all cookies to the response
+            cookiesToSetOnResponse.forEach(({ name, value, options }) => {
+                response.cookies.set(name, value, {
+                    ...options,
+                    // Ensure cookies work across the site
+                    path: '/',
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax'
+                })
+            })
+            return response
+        }
+
         if (providerToken && userId) {
-            // Use service role client to bypass RLS for token storage
             const serviceClient = getServiceClient()
 
             if (serviceClient) {
@@ -97,16 +116,15 @@ export async function GET(request: Request) {
 
                     if (!updateError && data && data.length > 0) {
                         console.log('✅ Existing user - token updated')
-                        return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
+                        return createRedirectWithCookies(`${requestUrl.origin}/dashboard`)
                     }
 
-                    // If update failed (likely user doesn't exist), try INSERT
-                    // We include both id and user_id to cover schema variations
+                    // If update failed (user doesn't exist), try INSERT
                     const { error: insertError } = await serviceClient
                         .from('user_settings')
                         .insert({
-                            id: userId,           // Key for RLS
-                            user_id: userId,      // Legacy column support
+                            id: userId,
+                            user_id: userId,
                             github_access_token: providerToken,
                             github_username: githubUsername || '',
                             repo_name: 'auto-contributions',
@@ -118,28 +136,26 @@ export async function GET(request: Request) {
 
                     if (insertError) {
                         console.error('Error creating user settings:', insertError)
-                        // If insert failed, it might be because user_id column is missing or duplicate key
-                        // Redirect to setup with debug info
-                        return NextResponse.redirect(`${requestUrl.origin}/setup?error=insert_failed&details=${encodeURIComponent(insertError.message)}`)
+                        return createRedirectWithCookies(`${requestUrl.origin}/setup?error=insert_failed&details=${encodeURIComponent(insertError.message)}`)
                     }
 
                     console.log('✅ New user - settings created')
-                    return NextResponse.redirect(`${requestUrl.origin}/setup?new_user=true`)
+                    return createRedirectWithCookies(`${requestUrl.origin}/setup?new_user=true`)
 
                 } catch (dbError: any) {
                     console.error('Database error:', dbError)
-                    return NextResponse.redirect(`${requestUrl.origin}/setup?error=db_exception&details=${encodeURIComponent(dbError.message || 'Unknown error')}`)
+                    return createRedirectWithCookies(`${requestUrl.origin}/setup?error=db_exception&details=${encodeURIComponent(dbError.message || 'Unknown error')}`)
                 }
             } else {
                 console.error('Could not create service client')
-                return NextResponse.redirect(`${requestUrl.origin}/setup?error=service_client_failed`)
+                return createRedirectWithCookies(`${requestUrl.origin}/setup?error=service_client_failed`)
             }
         } else {
             console.warn('No provider_token or userId available')
-            return NextResponse.redirect(`${requestUrl.origin}/setup?error=missing_token`)
+            return createRedirectWithCookies(`${requestUrl.origin}/setup?error=missing_token`)
         }
     }
 
-    // No code parameter - shouldn't happen but redirect to home
+    // No code parameter
     return NextResponse.redirect(`${requestUrl.origin}/?error=no_code`)
 }
