@@ -2,13 +2,12 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-    // Skip auth check for API routes and static files
+    // Skip auth check for API routes - they handle their own auth
     const path = request.nextUrl.pathname
-    if (path.startsWith('/api/') || path.startsWith('/_next/')) {
+    if (path.startsWith('/api/')) {
         return NextResponse.next()
     }
 
-    // Create response that can be modified
     let response = NextResponse.next({
         request: {
             headers: request.headers,
@@ -17,26 +16,16 @@ export async function middleware(request: NextRequest) {
 
     try {
         const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key',
             {
                 cookies: {
                     getAll() {
                         return request.cookies.getAll()
                     },
-                    setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
-                        // Update request cookies
-                        cookiesToSet.forEach(({ name, value }) => {
-                            request.cookies.set(name, value)
-                        })
-                        // Create new response with updated cookies
-                        response = NextResponse.next({
-                            request: {
-                                headers: request.headers,
-                            },
-                        })
-                        // Set cookies on response
+                    setAll(cookiesToSet: any[]) {
                         cookiesToSet.forEach(({ name, value, options }) => {
+                            request.cookies.set(name, value)
                             response.cookies.set(name, value, options)
                         })
                     },
@@ -44,13 +33,21 @@ export async function middleware(request: NextRequest) {
             }
         )
 
-        // CRITICAL: This refreshes the session and updates cookies
-        // The getUser() call will refresh expired tokens automatically
-        await supabase.auth.getUser()
+        // Reduced timeout - fail fast (2 seconds instead of 5)
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Auth timeout')), 2000)
+        )
 
-    } catch (error) {
-        // Don't block on auth errors - pages will handle their own auth
-        console.error('Middleware auth error:', error)
+        // Only refresh session, don't spam logs on failure
+        await Promise.race([
+            supabase.auth.getUser(),
+            timeoutPromise
+        ]).catch(() => {
+            // Silent fail - individual pages handle auth
+        })
+
+    } catch {
+        // Silent fail - don't spam console
     }
 
     return response
@@ -63,7 +60,6 @@ export const config = {
          * - _next/static (static files)
          * - _next/image (image optimization files)
          * - favicon.ico (favicon file)
-         * - public files
          */
         '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],

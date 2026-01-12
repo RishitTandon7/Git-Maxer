@@ -2,9 +2,9 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { User, Session } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
 
-type PlanType = 'free' | 'pro' | 'enterprise' | 'owner' | 'leetcode' | null
+type PlanType = 'free' | 'pro' | 'enterprise' | 'owner' | null
 
 interface AuthContextType {
     user: User | null
@@ -20,73 +20,92 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [userPlan, setUserPlan] = useState<PlanType>(null)
     const [loading, setLoading] = useState(true)
 
-    const fetchUserPlan = async (userId: string, username?: string) => {
-        // Instant owner check
-        if (username === 'rishittandon7') {
-            setUserPlan('owner')
-            localStorage.setItem('userPlan', 'owner')
-            return
-        }
-
-        // Check localStorage cache first
-        const cachedPlan = localStorage.getItem('userPlan')
-        if (cachedPlan) {
-            setUserPlan(cachedPlan as PlanType)
-        }
-
-        // Fetch from DB
-        try {
-            const { data: settings } = await supabase
-                .from('user_settings')
-                .select('plan_type')
-                .eq('id', userId)
-                .single()
-
-            if (settings?.plan_type) {
-                setUserPlan(settings.plan_type as PlanType)
-                localStorage.setItem('userPlan', settings.plan_type)
-            }
-        } catch (error) {
-            console.error('Error fetching user plan:', error)
-        }
-    }
-
-    const handleSession = async (session: Session | null) => {
-        if (session?.user) {
-            setUser(session.user)
-            await fetchUserPlan(session.user.id, session.user.user_metadata?.user_name)
-        } else {
-            setUser(null)
-            setUserPlan(null)
-            localStorage.removeItem('userPlan')
-        }
-        setLoading(false)
-    }
-
     useEffect(() => {
-        // Set up auth state listener FIRST
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('🎯 Auth event:', event)
-            await handleSession(session)
-        })
-
-        // Then check for existing session
+        // Check active session
         const initializeAuth = async () => {
             try {
                 const { data: { session } } = await supabase.auth.getSession()
-                if (session) {
-                    await handleSession(session)
-                } else {
-                    // No session found, stop loading
-                    setLoading(false)
+
+                if (session?.user) {
+                    setUser(session.user)
+
+                    // INSTANT Owner check (no DB delay)
+                    if (session.user.user_metadata?.user_name === 'rishittandon7') {
+                        setUserPlan('owner')
+                        console.log('🎯 Auth: Detected OWNER via metadata')
+                    }
+
+                    // Check localStorage cache first for instant loading
+                    const cachedPlan = localStorage.getItem('userPlan')
+                    if (cachedPlan) {
+                        setUserPlan(cachedPlan as PlanType)
+                        console.log('🎯 Auth: Using cached plan:', cachedPlan)
+                    }
+
+                    // Background fetch from DB to update cache
+                    const { data: settings } = await supabase
+                        .from('user_settings')
+                        .select('plan_type')
+                        .eq('id', session.user.id)
+                        .single()
+
+                    if (settings?.plan_type) {
+                        // Owner always stays owner
+                        if (session.user.user_metadata?.user_name === 'rishittandon7') {
+                            setUserPlan('owner')
+                            localStorage.setItem('userPlan', 'owner')
+                        } else {
+                            setUserPlan(settings.plan_type as PlanType)
+                            localStorage.setItem('userPlan', settings.plan_type)
+                            console.log('🎯 Auth: Plan from DB:', settings.plan_type)
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Auth initialization error:', error)
+            } finally {
                 setLoading(false)
             }
         }
 
         initializeAuth()
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('🎯 Auth event:', event)
+
+            if (session?.user) {
+                setUser(session.user)
+
+                // Check cache first
+                const cachedPlan = localStorage.getItem('userPlan')
+                if (cachedPlan) {
+                    setUserPlan(cachedPlan as PlanType)
+                }
+
+                // Instant owner check
+                if (session.user.user_metadata?.user_name === 'rishittandon7') {
+                    setUserPlan('owner')
+                    localStorage.setItem('userPlan', 'owner')
+                } else {
+                    // Fetch plan for non-owners
+                    const { data: settings } = await supabase
+                        .from('user_settings')
+                        .select('plan_type')
+                        .eq('id', session.user.id)
+                        .single()
+
+                    if (settings?.plan_type) {
+                        setUserPlan(settings.plan_type as PlanType)
+                        localStorage.setItem('userPlan', settings.plan_type)
+                    }
+                }
+            } else {
+                setUser(null)
+                setUserPlan(null)
+                localStorage.removeItem('userPlan') // Clear cache on logout
+            }
+        })
 
         return () => subscription.unsubscribe()
     }, [])
@@ -95,8 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signOut()
         setUser(null)
         setUserPlan(null)
-        localStorage.removeItem('userPlan')
-        window.location.href = '/'
+        localStorage.removeItem('userPlan') // Clear cached plan
+        window.location.href = '/' // Force full page reload to clear all state
     }
 
     return (

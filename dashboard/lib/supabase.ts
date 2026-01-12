@@ -7,22 +7,19 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error('❌ Supabase env vars missing!')
 }
 
-// Use standard createClient - stores auth in localStorage
-// This avoids PKCE cookie issues with SSR
+// SIMPLEST possible setup - just works
 export const supabase = createClient(
     supabaseUrl || 'https://placeholder.supabase.co',
     supabaseAnonKey || 'placeholder',
     {
         auth: {
-            flowType: 'implicit', // Use implicit flow instead of PKCE
             persistSession: true,
             autoRefreshToken: true,
             detectSessionInUrl: true,
-            storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         },
     }
 )
 
 if (typeof window !== 'undefined') {
-    console.log('🔵 Supabase Client Ready (Implicit Flow)')
+    console.log('🔵 Supabase Ready')
 }
