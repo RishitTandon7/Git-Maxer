@@ -84,16 +84,10 @@ export async function GET(request: Request) {
         // Helper to create redirect with cookies
         const createRedirectWithCookies = (url: string) => {
             const response = NextResponse.redirect(url)
-            // Apply all cookies to the response
+            // Apply all cookies to the response using Supabase's options
+            // DO NOT override with httpOnly - browser client needs to read these
             cookiesToSetOnResponse.forEach(({ name, value, options }) => {
-                response.cookies.set(name, value, {
-                    ...options,
-                    // Ensure cookies work across the site
-                    path: '/',
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'lax'
-                })
+                response.cookies.set(name, value, options)
             })
             return response
         }
