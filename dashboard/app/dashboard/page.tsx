@@ -183,7 +183,11 @@ export default function Dashboard() {
                 localStorage.setItem('userPlan', settings.plan_type)
             }
 
-            // Check subscription expiry for paid plans
+            // CRITICAL: Set loading to false IMMEDIATELY after getting settings
+            // Other operations (history, expiry check) are non-essential
+            setLoading(false)
+
+            // Non-blocking: Check subscription expiry for paid plans
             if (settings.plan_type === 'pro' || settings.plan_type === 'enterprise') {
                 const expiryDate = settings.plan_expiry ? new Date(settings.plan_expiry) : null
                 const now = new Date()
@@ -191,40 +195,31 @@ export default function Dashboard() {
                 if (expiryDate) {
                     const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
-                    // Subscription expired - downgrade to free
                     if (daysUntilExpiry <= 0) {
                         console.warn(`Subscription expired (Days left: ${daysUntilExpiry}), downgrading to free`)
-
-                        // Update in database
-                        await supabase
-                            .from('user_settings')
-                            .update({
-                                plan_type: 'free',
-                                is_paid: false
-                            })
-                            .eq('id', userId)
-
                         setUserPlan('free')
                         localStorage.setItem('userPlan', 'free')
+                        showToast('error', `Your ${settings.plan_type} subscription has expired. You've been downgraded to the free plan.`)
 
-                        showToast('error', `Your ${settings.plan_type} subscription has expired. You've been downgraded to the free plan. Renew on the Pricing page!`)
-                    }
-                    // Warning: 3 days or less until expiry
-                    else if (daysUntilExpiry <= 3) {
-                        showToast('error', `⚠️ Your ${settings.plan_type} plan expires in ${daysUntilExpiry} day${daysUntilExpiry > 1 ? 's' : ''}! Renew soon to keep your benefits.`)
+                        // Update DB in background - don't block
+                        fetch(`/api/user-settings`, {
+                            method: 'POST',
+                            body: JSON.stringify({ userId, updates: { plan_type: 'free', is_paid: false } })
+                        }).catch(console.error)
+                    } else if (daysUntilExpiry <= 3) {
+                        showToast('error', `⚠️ Your ${settings.plan_type} plan expires in ${daysUntilExpiry} day${daysUntilExpiry > 1 ? 's' : ''}!`)
                     }
                 }
             }
 
-            // Load history
-            const { data: history } = await supabase
-                .from('generated_history')
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(10)
+            // Non-blocking: Load history in background via API
+            fetch(`/api/user-history?userId=${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.history) setLogs(data.history)
+                })
+                .catch(console.error)
 
-            if (history) setLogs(history)
         } catch (error: any) {
             console.error('Error fetching dashboard data:', error)
             console.error('Error message:', error?.message)
