@@ -136,11 +136,19 @@ export default function Dashboard() {
         const startTime = Date.now()
 
         try {
-            const { data: settings, error: settingsError } = await supabase
+            // Wrap query in timeout to prevent infinite hang
+            const queryPromise = supabase
                 .from('user_settings')
                 .select('*')
                 .eq('id', userId)
                 .single()
+
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Database query timeout (3s)')), 3000)
+            )
+
+            const result = await Promise.race([queryPromise, timeoutPromise]) as any
+            const { data: settings, error: settingsError } = result
 
             console.log(`📊 Settings query took ${Date.now() - startTime}ms`)
 
