@@ -117,11 +117,11 @@ export default function Dashboard() {
         setUser(authUser)
         setUserPlan(authUserPlan || 'free')
 
-        // Fail-safe: Force loading off after 5 seconds max
+        // Fail-safe: Force loading off after 2 seconds max
         const timeoutId = setTimeout(() => {
             console.warn('⚠️ Dashboard timeout - forcing loading off')
             setLoading(false)
-        }, 5000)
+        }, 2000)
 
         // Load user data
         fetchData(authUser.id).finally(() => {
@@ -132,12 +132,17 @@ export default function Dashboard() {
     }, [authUser, authLoading, authUserPlan, router])
 
     const fetchData = async (userId: string) => {
+        console.log('📊 Dashboard: Starting fetchData for', userId)
+        const startTime = Date.now()
+
         try {
             const { data: settings, error: settingsError } = await supabase
                 .from('user_settings')
                 .select('*')
                 .eq('id', userId)
                 .single()
+
+            console.log(`📊 Settings query took ${Date.now() - startTime}ms`)
 
             console.log('Settings query result:', { settings, settingsError, userId })
 
