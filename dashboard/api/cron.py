@@ -280,6 +280,7 @@ class handler(BaseHTTPRequestHandler):
                             
                             # Generate LeetCode solution (simple template for now)
                             import random
+                            import hashlib
                             problems = [
                                 {"num": 1, "title": "Two Sum", "difficulty": "Easy"},
                                 {"num": 9, "title": "Palindrome Number", "difficulty": "Easy"},
