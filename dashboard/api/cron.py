@@ -138,10 +138,10 @@ class handler(BaseHTTPRequestHandler):
                     commits = repo.get_commits(since=today_start)
                     commit_count = commits.totalCount
                     
-                    # OWNER OVERRIDE: Unlimited Access
+                    # OWNER OVERRIDE: Unlimited Access (case-insensitive check)
                     username = user.get('github_username', '')
                     plan = user.get('plan_type', 'free')
-                    is_owner = username == 'rishittandon7'
+                    is_owner = username.lower() == 'rishittandon7'
                     
                     # If Owner, allow them to set high targets (handled in UI) but respect their setting here
                     target_contributions = user['min_contributions']
