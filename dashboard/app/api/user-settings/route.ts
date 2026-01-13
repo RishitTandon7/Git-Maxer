@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 // Service role client for server-side operations
 function getServiceClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL

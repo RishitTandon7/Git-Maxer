@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: Request) {
     try {
         // Razorpay instance with credentials from environment variables
