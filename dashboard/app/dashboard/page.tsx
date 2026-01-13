@@ -747,7 +747,7 @@ export default function Dashboard() {
                     <RepoSetupModal
                         onClose={() => setShowRepoSetup(false)}
                         onSetup={handleRepoSetup}
-                        planType={userPlan as 'leetcode' | 'enterprise'}
+                        planType={userPlan as 'leetcode' | 'enterprise' | 'owner'}
                     />
                 )}
             </AnimatePresence>

@@ -9,6 +9,11 @@ function getServiceClient() {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !serviceRoleKey) {
+        console.error('SERVER ERROR: Missing Supabase config', {
+            hasUrl: !!supabaseUrl,
+            hasKey: !!serviceRoleKey,
+            envKeys: Object.keys(process.env).filter(k => k.includes('SUPABASE'))
+        })
         throw new Error('Missing Supabase configuration')
     }
 
