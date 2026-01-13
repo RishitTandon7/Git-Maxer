@@ -1,12 +1,5 @@
 import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase Admin (Server-side only)
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder'
-);
 
 export async function POST(req: Request) {
     try {
@@ -29,8 +22,6 @@ export async function POST(req: Request) {
         };
 
         const order = await razorpay.orders.create(options);
-
-        // Optional: Log intent in DB if needed
 
         return NextResponse.json(order);
     } catch (error: any) {

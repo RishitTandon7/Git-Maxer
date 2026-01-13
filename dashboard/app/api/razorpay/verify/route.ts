@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 
-// Initialize Supabase Admin for updates
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder'
-);
+function getSupabase() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) throw new Error('Missing Supabase config')
+    return createClient(url, key, {
+        auth: { autoRefreshToken: false, persistSession: false }
+    })
+}
 
 
 export async function POST(req: NextRequest) {
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
         planExpiry.setDate(planExpiry.getDate() + 30);
 
         // 4. Update user plan in database
-        const { error: updateError } = await supabase
+        const { error: updateError } = await getSupabase()
             .from('user_settings')
             .update({
                 plan_type: plan,
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 5. Log the payment success
-        const { error: paymentError } = await supabase.from('payments').insert({
+        const { error: paymentError } = await getSupabase().from('payments').insert({
             user_id: user_id,
             order_id: razorpay_order_id,
             payment_id: razorpay_payment_id,

@@ -1,17 +1,21 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
+function getSupabase() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) throw new Error('Missing Supabase config')
+    return createClient(url, key, {
+        auth: { autoRefreshToken: false, persistSession: false }
+    })
+}
 
 export async function POST(req: Request) {
     try {
         const { userId, projectName, repoName, projectDescription, techStack } = await req.json()
 
         // Verify user has Enterprise plan
-        const { data: user, error: userError } = await supabase
+        const { data: user, error: userError } = await getSupabase()
             .from('user_settings')
             .select('plan_type, github_username, github_access_token')
             .eq('id', userId)
@@ -26,7 +30,7 @@ export async function POST(req: Request) {
         }
 
         // Check if user already has an active project
-        const { data: activeProject } = await supabase
+        const { data: activeProject } = await getSupabase()
             .from('projects')
             .select('*')
             .eq('user_id', userId)
@@ -116,7 +120,7 @@ export async function POST(req: Request) {
         }
 
         // Create project record
-        const { data: project, error: projectError } = await supabase
+        const { data: project, error: projectError } = await getSupabase()
             .from('projects')
             .insert({
                 user_id: userId,
@@ -137,7 +141,7 @@ export async function POST(req: Request) {
         }
 
         // Update user_settings with active project
-        await supabase
+        await getSupabase()
             .from('user_settings')
             .update({ active_project_id: project.id })
             .eq('id', userId)
@@ -164,7 +168,7 @@ export async function GET(req: Request) {
         }
 
         // Get user's active project
-        const { data: project, error } = await supabase
+        const { data: project, error } = await getSupabase()
             .from('projects')
             .select('*')
             .eq('user_id', userId)
