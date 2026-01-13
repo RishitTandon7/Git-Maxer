@@ -2,12 +2,13 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { User } from '@supabase/supabase-js'
+import type { User, Session } from '@supabase/supabase-js'
 
 type PlanType = 'free' | 'pro' | 'enterprise' | 'leetcode' | 'owner' | null
 
 interface AuthContextType {
     user: User | null
+    session: Session | null
     userPlan: PlanType
     loading: boolean
     signOut: () => Promise<void>
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
+    const [session, setSession] = useState<Session | null>(null)
     const [userPlan, setUserPlan] = useState<PlanType>(null)
     const [loading, setLoading] = useState(true)
 
@@ -44,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 if (session?.user) {
                     console.log('✅ AuthProvider: Session found for', session.user.email)
                     setUser(session.user)
+                    setSession(session)
 
                     // INSTANT Owner check (no DB delay)
                     if (session.user.user_metadata?.user_name === 'rishittandon7') {
@@ -99,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (session?.user) {
                 setUser(session.user)
+                setSession(session)
 
                 // Check cache first
                 const cachedPlan = localStorage.getItem('userPlan')
@@ -129,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
             } else {
                 setUser(null)
+                setSession(null)
                 setUserPlan(null)
                 localStorage.removeItem('userPlan') // Clear cache on logout
             }
@@ -143,13 +148,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signOut = async () => {
         await supabase.auth.signOut()
         setUser(null)
+        setSession(null)
         setUserPlan(null)
         localStorage.removeItem('userPlan') // Clear cached plan
         window.location.href = '/' // Force full page reload to clear all state
     }
 
     return (
-        <AuthContext.Provider value={{ user, userPlan, loading, signOut }}>
+        <AuthContext.Provider value={{ user, session, userPlan, loading, signOut }}>
             {children}
         </AuthContext.Provider>
     )

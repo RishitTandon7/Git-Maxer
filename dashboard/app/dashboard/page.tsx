@@ -16,8 +16,87 @@ export const dynamic = 'force-dynamic'
 
 export default function Dashboard() {
     const router = useRouter()
-    const { user: authUser, userPlan: authUserPlan, loading: authLoading, signOut } = useAuth()
+    const { user: authUser, session, userPlan: authUserPlan, loading: authLoading, signOut } = useAuth()
     const [user, setUser] = useState<any>(null)
+    // ...
+    // Note: I'm only showing the top part change and the specific handler change below via separate chunks or a large chunk if contiguous. 
+    // Since handleRepoSetup is far down, I will use multiple chunks if possible, OR I will just modify handleRepoSetup and trust the variable scope?
+    // Wait, 'session' variable name might conflict if I just add it?
+    // 'session' from useAuth is at top level function scope.
+    // 'handleRepoSetup' is inside. So it can access 'session'.
+
+    // ... (skipping to handleRepoSetup) ...
+
+    const handleRepoSetup_BAD = async (repoName: string, autoCreate: boolean) => {
+        if (!user) return
+
+        try {
+            console.log('🚀 Starting Repo Setup:', { repoName, autoCreate, plan: userPlan })
+
+            // If auto-create, call API to create the repo
+            if (autoCreate) {
+                // Get provider token from session context directly - NO ASYNC FETCH
+                console.log('🔄 Checking session from context...')
+                const githubToken = session?.provider_token
+
+                console.log('🔑 GitHub Token present:', !!githubToken)
+
+                if (!githubToken) {
+                    throw new Error('Could not retrieve GitHub token. Please try logging out and back in.')
+                }
+
+                console.log('⏳ Calling create-leetcode-repo API...')
+                const controller = new AbortController()
+                const timeoutId = setTimeout(() => controller.abort(), 15000) // 15s timeout
+
+                try {
+                    const response = await fetch('/api/create-leetcode-repo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            repoName,
+                            userId: user.id,
+                            planType: userPlan,
+                            githubToken
+                        }),
+                        signal: controller.signal
+                    })
+                    clearTimeout(timeoutId)
+
+                    console.log('📥 API Response Status:', response.status)
+                    const data = await response.json()
+
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to create repository')
+                    }
+                    console.log('✅ Repository created:', data.repo_url)
+                } catch (fetchErr: any) {
+                    if (fetchErr.name === 'AbortError') {
+                        throw new Error('Request timed out. Please try again or create repo manually.')
+                    }
+                    throw fetchErr
+                }
+            }
+
+            // Save repo name to database
+            console.log('💾 Saving to database...')
+            const { error } = await supabase
+                .from('user_settings')
+                .update({ leetcode_repo: repoName })
+                .eq('id', user.id)
+
+            if (error) throw error
+            console.log('✅ Database updated')
+
+            setLeetcodeRepo(repoName)
+            setShowRepoSetup(false)
+            showToast('success', `Repository "${repoName}" ${autoCreate ? 'created and' : ''} linked successfully!`)
+
+        } catch (error: any) {
+            console.error('Repo setup error:', error)
+            throw new Error(error.message || 'Failed to setup repository')
+        }
+    }
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
@@ -65,18 +144,8 @@ export default function Dashboard() {
 
             // If auto-create, call API to create the repo
             if (autoCreate) {
-                // Get provider token from session
-                console.log('🔄 Getting session...')
-                const client = getSupabaseClient()
-
-                // Add timeout to getSession
-                const sessionPromise = client.auth.getSession()
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Session retrieval timed out')), 5000)
-                )
-
-                const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise]) as any
-                const session = sessionData?.session
+                // Get provider token from session context directly - NO ASYNC FETCH
+                console.log('🔄 Checking session from context...')
                 const githubToken = session?.provider_token
 
                 console.log('🔑 GitHub Token present:', !!githubToken)
