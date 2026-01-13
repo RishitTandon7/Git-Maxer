@@ -59,6 +59,20 @@ export default function LoginPage() {
           badgeText: 'text-red-500',
           logoText: 'from-red-400 to-orange-500'
         }
+      case 'leetcode': // 💻 Purple/Green Code Theme
+        return {
+          headingGradient: 'from-purple-400 via-pink-500 to-purple-600',
+          subHeadingAccent: 'text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]',
+          buttonPrimary: 'bg-gradient-to-r from-purple-500 to-pink-600 text-white hover:shadow-purple-500/60 shadow-[0_0_35px_rgba(168,85,247,0.5)] border border-purple-400/30 ring-1 ring-purple-400/20',
+          buttonSecondary: 'bg-black/40 border border-purple-500/50 text-purple-100 hover:bg-purple-500/20 hover:border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.15)] backdrop-blur-xl',
+          navbarButton: 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-purple-500/40 border-purple-400/40',
+          gridBorder: 'border-purple-500/50',
+          gridShadow: 'shadow-[0_0_60px_rgba(168,85,247,0.25)]',
+          gridParticleColor: 'bg-purple-400',
+          badgeBg: 'bg-purple-900/40',
+          badgeText: 'text-purple-300',
+          logoText: 'from-purple-200 via-pink-400 to-purple-400'
+        }
       case 'pro': // 🔵 Hyper Tech Theme
         return {
           headingGradient: 'from-cyan-300 via-blue-500 to-purple-600',
@@ -295,8 +309,15 @@ export default function LoginPage() {
                 <button
                   onClick={async () => {
                     await supabase.auth.signOut()
-                    router.push('/')
-                    window.location.reload()
+                    // Clear all session data
+                    if (typeof window !== 'undefined') {
+                      sessionStorage.clear()
+                      localStorage.removeItem('userPlan')
+                    }
+                    // Use replace to prevent back button from returning to dashboard
+                    router.replace('/')
+                    // Force reload to clear all state
+                    setTimeout(() => window.location.reload(), 100)
                   }}
                   className={`h-14 px-6 rounded-full font-medium text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2 backdrop-blur-sm ${theme.buttonSecondary}`}
                 >

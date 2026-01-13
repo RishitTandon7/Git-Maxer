@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
-type PlanType = 'free' | 'pro' | 'enterprise' | 'owner' | null
+type PlanType = 'free' | 'pro' | 'enterprise' | 'leetcode' | 'owner' | null
 
 interface AuthContextType {
     user: User | null

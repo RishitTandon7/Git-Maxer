@@ -8,6 +8,7 @@ import { Settings, Activity, Power, Save, History, User, Code, Clock, Languages,
 import Link from 'next/link'
 import { OwnerStats } from './OwnerStats'
 import { EnterpriseProjectPanel } from './EnterpriseProjectPanel'
+import { RepoSetupModal } from './RepoSetupModal'
 import { useAuth } from '../providers/AuthProvider'
 
 // Force dynamic rendering to avoid prerendering issues with Supabase
@@ -23,6 +24,10 @@ export default function Dashboard() {
     const [toast, setToast] = useState<{ type: 'success' | 'error', message: string } | null>(null)
     const [userPlan, setUserPlan] = useState<string>('free') // Track user's plan
     const [testingBot, setTestingBot] = useState(false)
+    const [showRepoSetup, setShowRepoSetup] = useState(false)
+    const [leetcodeRepo, setLeetcodeRepo] = useState<string | null>(null)
+    const [enterpriseRepo, setEnterpriseRepo] = useState<string | null>(null)
+
 
     const testBot = async () => {
         setTestingBot(true)
@@ -51,6 +56,58 @@ export default function Dashboard() {
             setTestingBot(false)
         }
     }
+
+    const handleRepoSetup = async (repoName: string, autoCreate: boolean) => {
+        if (!user) return
+
+        try {
+            // If auto-create, call API to create the repo
+            if (autoCreate) {
+                // Get provider token from session
+                const { data: { session } } = await supabase.auth.getSession()
+                const githubToken = session?.provider_token
+
+                if (!githubToken) {
+                    throw new Error('Could not retrieve GitHub token. Please try logging out and back in.')
+                }
+
+                const response = await fetch('/api/create-leetcode-repo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        repoName,
+                        userId: user.id,
+                        planType: userPlan,
+                        githubToken // Pass token to API
+                    })
+                })
+
+                const data = await response.json()
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create repository')
+                }
+
+                console.log('✅ Repository created:', data.repo_url)
+            }
+
+            // Save repo name to database
+            const { error } = await supabase
+                .from('user_settings')
+                .update({ leetcode_repo: repoName })
+                .eq('id', user.id)
+
+            if (error) throw error
+
+            setLeetcodeRepo(repoName)
+            setShowRepoSetup(false)
+            showToast('success', `Repository "${repoName}" ${autoCreate ? 'created and' : ''} linked successfully!`)
+
+        } catch (error: any) {
+            console.error('Repo setup error:', error)
+            throw new Error(error.message || 'Failed to setup repository')
+        }
+    }
+
 
     const [config, setConfig] = useState({
         min_contributions: 1,
@@ -105,11 +162,24 @@ export default function Dashboard() {
         if (authLoading) return // Wait for AuthProvider to finish
 
         if (!authUser) {
-            // Not logged in - redirect to home
+            // Not logged in - redirect to home (but only once to prevent loops)
             console.log('❌ No user from AuthProvider, redirecting to /')
             setLoading(false)
-            router.push('/')
+
+            // Prevent infinite redirect loop on mobile
+            if (typeof window !== 'undefined') {
+                const hasRedirected = sessionStorage.getItem('dashboard_redirect')
+                if (!hasRedirected) {
+                    sessionStorage.setItem('dashboard_redirect', 'true')
+                    router.push('/')
+                }
+            }
             return
+        }
+
+        // Clear redirect flag if user is logged in
+        if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('dashboard_redirect')
         }
 
         // User is logged in via AuthProvider
@@ -177,6 +247,17 @@ export default function Dashboard() {
             setConfig(configData)
             setOriginalConfig(configData)
             setUserPlan(settings.plan_type || 'free')
+
+            // Load LeetCode repo if user has LeetCode plan
+            if (settings.leetcode_repo) {
+                setLeetcodeRepo(settings.leetcode_repo)
+            }
+
+            // Check if LeetCode/Enterprise user needs to setup repo
+            if (settings.plan_type === 'leetcode' && !settings.leetcode_repo) {
+                console.log('🎯 LeetCode user without repo - showing setup modal')
+                setTimeout(() => setShowRepoSetup(true), 1000) // Delay to let dashboard load first
+            }
 
             // Sync with localStorage to keep AuthProvider in sync on next load
             if (settings.plan_type) {
@@ -636,6 +717,17 @@ export default function Dashboard() {
                 )}
             </div>
 
+            {/* Repository Setup Modal */}
+            <AnimatePresence>
+                {showRepoSetup && (
+                    <RepoSetupModal
+                        onClose={() => setShowRepoSetup(false)}
+                        onSetup={handleRepoSetup}
+                        planType={userPlan as 'leetcode' | 'enterprise'}
+                    />
+                )}
+            </AnimatePresence>
+
             {/* Mobile Nav */}
             <nav className="lg:hidden fixed top-0 w-full z-40 bg-[#0d1117] border-b border-[#30363d] px-4 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -665,6 +757,7 @@ function ThemeBackground({ plan }: { plan: string }) {
     if (plan === 'owner') return <RoyalTheme />
     if (plan === 'pro') return <CyberTheme />
     if (plan === 'enterprise') return <GoldenTheme />
+    if (plan === 'leetcode') return <MatrixTheme />
 
     // Default Green/Dark Theme
     return (
@@ -729,6 +822,89 @@ function RoyalTheme() {
                     }}
                 />
             ))}
+        </div>
+    )
+}
+
+
+function MatrixTheme() {
+    return (
+        <div className="absolute inset-0 bg-[#0a0a0a] overflow-hidden font-mono">
+            {/* 1. Deep Background Gradient */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_#ffa11620_0%,_#0a0a0a_60%,_#0a0a0a_100%)]" />
+
+            {/* 2. Moving Grid Floor */}
+            <motion.div
+                className="absolute inset-0 opacity-20"
+                style={{
+                    backgroundImage: 'linear-gradient(rgba(255, 161, 22, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 161, 22, 0.1) 1px, transparent 1px)',
+                    backgroundSize: '40px 40px',
+                    transform: 'perspective(500px) rotateX(20deg) scale(1.5)'
+                }}
+                animate={{
+                    backgroundPosition: ['0px 0px', '0px 40px']
+                }}
+                transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "linear"
+                }}
+            />
+
+            {/* 3. Orange Code Rain */}
+            {[...Array(30)].map((_, i) => (
+                <motion.div
+                    key={`rain-${i}`}
+                    className="absolute top-0 text-[#ffa116] text-opacity-40 font-bold whitespace-pre writing-vertical-rl text-[10px] sm:text-xs select-none pointer-events-none"
+                    initial={{ y: -1000, opacity: 0 }}
+                    animate={{
+                        y: ['-100%', '150%'],
+                        opacity: [0, 0.8, 0]
+                    }}
+                    transition={{
+                        duration: Math.random() * 5 + 3,
+                        repeat: Infinity,
+                        delay: Math.random() * 5,
+                        ease: "linear"
+                    }}
+                    style={{
+                        left: `${Math.random() * 100}%`,
+                        textShadow: '0 0 8px rgba(255, 161, 22, 0.4)'
+                    }}
+                >
+                    {Array.from({ length: 15 }).map(() =>
+                        String.fromCharCode(0x30A0 + Math.random() * 96)
+                    ).join('')}
+                </motion.div>
+            ))}
+
+            {/* 4. Floating Tech Keywords */}
+            {[...Array(12)].map((_, i) => (
+                <motion.div
+                    key={`word-${i}`}
+                    className="absolute text-[#ffa116]/30 font-bold text-sm sm:text-lg select-none blur-[0.5px]"
+                    initial={{ y: 800, opacity: 0 }}
+                    animate={{
+                        y: -100,
+                        opacity: [0, 0.6, 0],
+                        scale: [0.8, 1, 0.8]
+                    }}
+                    transition={{
+                        duration: Math.random() * 15 + 10,
+                        repeat: Infinity,
+                        delay: Math.random() * 10,
+                        ease: "linear"
+                    }}
+                    style={{
+                        left: `${Math.random() * 90}%`,
+                    }}
+                >
+                    {['Solved', 'Accepted', 'Runtime: 0ms', '100% Beats', 'O(n)', 'Hard', 'Medium', '</>', '{ code }'][Math.floor(Math.random() * 9)]}
+                </motion.div>
+            ))}
+
+            {/* 5. Vignette Overlay */}
+            <div className="absolute inset-0 bg-[radial-gradient(transparent_0%,#000000_100%)] opacity-80" />
         </div>
     )
 }
