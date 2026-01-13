@@ -19,13 +19,22 @@ export async function POST(request: Request) {
         }
 
         // 1. Get user info
+        console.log(`Getting GitHub user info...`)
         const userRes = await fetch('https://api.github.com/user', { headers })
-        if (!userRes.ok) throw new Error('Failed to fetch GitHub user')
+        console.log(`GitHub User Status: ${userRes.status}`)
+        if (!userRes.ok) {
+            const errText = await userRes.text()
+            console.error(`GitHub User Error: ${errText}`)
+            throw new Error('Failed to fetch GitHub user')
+        }
         const user = await userRes.json()
         const username = user.login
+        console.log(`GitHub Username: ${username}`)
 
         // 2. Check if repo exists
+        console.log(`Checking if repo ${repoName} exists...`)
         const checkRes = await fetch(`https://api.github.com/repos/${username}/${repoName}`, { headers })
+        console.log(`Repo Check Status: ${checkRes.status}`)
 
         if (checkRes.ok) {
             console.log(`Repo ${repoName} already exists`)

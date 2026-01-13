@@ -61,42 +61,62 @@ export default function Dashboard() {
         if (!user) return
 
         try {
+            console.log('🚀 Starting Repo Setup:', { repoName, autoCreate, plan: userPlan })
+
             // If auto-create, call API to create the repo
             if (autoCreate) {
                 // Get provider token from session
                 const { data: { session } } = await supabase.auth.getSession()
                 const githubToken = session?.provider_token
 
+                console.log('🔑 GitHub Token present:', !!githubToken)
+
                 if (!githubToken) {
                     throw new Error('Could not retrieve GitHub token. Please try logging out and back in.')
                 }
 
-                const response = await fetch('/api/create-leetcode-repo', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        repoName,
-                        userId: user.id,
-                        planType: userPlan,
-                        githubToken // Pass token to API
+                console.log('⏳ Calling create-leetcode-repo API...')
+                const controller = new AbortController()
+                const timeoutId = setTimeout(() => controller.abort(), 15000) // 15s timeout
+
+                try {
+                    const response = await fetch('/api/create-leetcode-repo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            repoName,
+                            userId: user.id,
+                            planType: userPlan,
+                            githubToken
+                        }),
+                        signal: controller.signal
                     })
-                })
+                    clearTimeout(timeoutId)
 
-                const data = await response.json()
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to create repository')
+                    console.log('📥 API Response Status:', response.status)
+                    const data = await response.json()
+
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to create repository')
+                    }
+                    console.log('✅ Repository created:', data.repo_url)
+                } catch (fetchErr: any) {
+                    if (fetchErr.name === 'AbortError') {
+                        throw new Error('Request timed out. Please try again or create repo manually.')
+                    }
+                    throw fetchErr
                 }
-
-                console.log('✅ Repository created:', data.repo_url)
             }
 
             // Save repo name to database
+            console.log('💾 Saving to database...')
             const { error } = await supabase
                 .from('user_settings')
                 .update({ leetcode_repo: repoName })
                 .eq('id', user.id)
 
             if (error) throw error
+            console.log('✅ Database updated')
 
             setLeetcodeRepo(repoName)
             setShowRepoSetup(false)
