@@ -253,9 +253,9 @@ export default function Dashboard() {
                 setLeetcodeRepo(settings.leetcode_repo)
             }
 
-            // Check if LeetCode/Enterprise user needs to setup repo
-            if (settings.plan_type === 'leetcode' && !settings.leetcode_repo) {
-                console.log('🎯 LeetCode user without repo - showing setup modal')
+            // Check if LeetCode/Enterprise/Owner user needs to setup repo
+            if ((settings.plan_type === 'leetcode' || settings.plan_type === 'owner') && !settings.leetcode_repo) {
+                console.log('🎯 LeetCode/Owner user without repo - showing setup modal')
                 setTimeout(() => setShowRepoSetup(true), 1000) // Delay to let dashboard load first
             }
 
@@ -670,6 +670,30 @@ export default function Dashboard() {
                                         </select>
                                     </div>
                                 </div>
+
+                                {/* LeetCode Repo (for Owner/LeetCode plan users) */}
+                                {(userPlan === 'owner' || userPlan === 'leetcode') && (
+                                    <div className="flex items-center justify-between bg-[#0d1117] border border-[#ffa116]/30 rounded-lg p-4 mt-3">
+                                        <div className="flex items-center gap-3 flex-1">
+                                            <Code className="w-5 h-5 text-[#ffa116]" />
+                                            <div className="flex-1">
+                                                <p className="text-xs text-[#ffa116] mb-1">LeetCode Solutions Repo</p>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[#8b949e] font-mono text-sm">@{config.github_username}/</span>
+                                                    <span className="text-[#ffa116] font-mono font-semibold">
+                                                        {leetcodeRepo || 'Not Set'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowRepoSetup(true)}
+                                            className="text-xs bg-[#ffa116]/20 text-[#ffa116] px-3 py-1.5 rounded-md hover:bg-[#ffa116]/30 transition-colors"
+                                        >
+                                            {leetcodeRepo ? 'Change' : 'Setup'}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
