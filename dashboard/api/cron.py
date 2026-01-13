@@ -64,6 +64,13 @@ class handler(BaseHTTPRequestHandler):
                     # Get user settings
                     github_username = user['github_username']
                     repo_name = user.get('repo_name', 'auto-contributions')
+                    
+                    # Sanitize repo name (remove spaces and invalid characters)
+                    repo_name = repo_name.strip().replace(' ', '-').replace('_', '-')
+                    repo_name = ''.join(c for c in repo_name if c.isalnum() or c == '-')
+                    if not repo_name:
+                        repo_name = 'auto-contributions'
+                    
                     repo_visibility = user.get('repo_visibility', 'public')
                     full_repo_name = f"{github_username}/{repo_name}"
                     
