@@ -9,7 +9,7 @@ if (typeof window !== 'undefined' && (!supabaseUrl || !supabaseAnonKey)) {
     console.error('❌ Supabase env vars missing! Check your Vercel environment variables.')
 }
 
-// Create a fresh client each time to avoid stale connections
+// Client-side singleton to avoid stale connections & multiple instances headers
 let _supabase: SupabaseClient | null = null
 
 export function getSupabaseClient(): SupabaseClient {
@@ -28,7 +28,7 @@ export function getSupabaseClient(): SupabaseClient {
         })
     }
 
-    // Client-side: reuse singleton but ensure it's fresh
+    // Client-side: use singleton
     if (!_supabase) {
         _supabase = createClient(supabaseUrl, supabaseAnonKey, {
             auth: {
@@ -37,31 +37,14 @@ export function getSupabaseClient(): SupabaseClient {
                 detectSessionInUrl: true,
             },
         })
-        console.log('🔵 Supabase Client Created')
+        console.log('🔵 Supabase Client Created (Singleton)')
     }
     return _supabase
 }
 
-// Legacy export for backward compatibility - lazy initialization
-let _legacySupabase: SupabaseClient | null = null
-
+// Legacy export - proxies to the same logic to ensure single instance on client
 export const supabase = new Proxy({} as SupabaseClient, {
     get(_, prop) {
-        if (!_legacySupabase) {
-            if (!supabaseUrl || !supabaseAnonKey) {
-                throw new Error('Supabase configuration missing')
-            }
-            _legacySupabase = createClient(supabaseUrl, supabaseAnonKey, {
-                auth: {
-                    persistSession: typeof window !== 'undefined',
-                    autoRefreshToken: typeof window !== 'undefined',
-                    detectSessionInUrl: typeof window !== 'undefined',
-                },
-            })
-            if (typeof window !== 'undefined') {
-                console.log('🔵 Supabase Ready')
-            }
-        }
-        return (_legacySupabase as any)[prop]
+        return (getSupabaseClient() as any)[prop]
     }
 })
