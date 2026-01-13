@@ -153,13 +153,16 @@ class handler(BaseHTTPRequestHandler):
                     # If Owner, allow them to set high targets (handled in UI) but respect their setting here
                     target_contributions = user['min_contributions']
                     
+                    # Flag to skip regular commits but still process LeetCode
+                    skip_regular_commit = False
+                    
                     if commit_count >= target_contributions:
                         logs.append(f"User {user['github_username']} has enough contributions ({commit_count})")
-                        continue
+                        skip_regular_commit = True  # Don't skip LeetCode for owner/leetcode plan!
                     
                     if is_owner:
                         logs.append(f"Owner {username}: Bypassing all limits.")
-                    else:
+                    elif not skip_regular_commit:
                         # 1. FREE TIER: 1 Commit per Week
                         if plan == 'free':
                             last_commit_str = user.get('last_commit_ts')
@@ -168,96 +171,90 @@ class handler(BaseHTTPRequestHandler):
                                 days_diff = (datetime.datetime.now(datetime.timezone.utc) - last_commit_dt).days
                                 if days_diff < 7:
                                     logs.append(f"Free Plan Limit: User {username} already committed {days_diff} days ago. Skipping (Wait 7 days).")
-                                    continue
+                                    skip_regular_commit = True
 
                         # 2. PRO TIER: 3 Commits per Day
                         elif plan == 'pro':
                             commits_today = user.get('daily_commit_count', 0)
-                            # Reset count logic should be handled by a daily reset job, but we can do a lazy reset check if needed.
-                            # For now, simplest is: if > 3, skip.
-                            # (Assuming 'daily_commit_count' is reset by another process or we allow it to grow and reset nightly)
                             if commits_today >= 3:
                                 logs.append(f"Pro Plan Limit: User {username} reached 3 commits today.")
-                                continue
+                                skip_regular_commit = True
                     
-                    # === GENERATION ===
-                    # Handle 'any' language logic here to get correct extension
-                    lang_for_generation = user['preferred_language']
-                    if lang_for_generation == 'any':
-                         from utils.content_generator import get_random_language
-                         lang_for_generation = get_random_language()
+                    # === REGULAR COMMIT (if not skipped) ===
+                    if not skip_regular_commit:
+                        # === GENERATION ===
+                        # Handle 'any' language logic here to get correct extension
+                        lang_for_generation = user['preferred_language']
+                        if lang_for_generation == 'any':
+                            from utils.content_generator import get_random_language
+                            lang_for_generation = get_random_language()
 
-                    gemini_key = os.environ.get("GEMINI_API_KEY")
-                    # Pass the specific language to generator
-                    content = get_random_content(gemini_key, lang_for_generation) 
-                    
-                    # Guard against API errors
-                    if content.startswith("Error") or "not found" in content:
-                        logs.append(f"Skipping commit for user {username}: Generation failed - {content}")
-                        continue
-
-                    # Extract filename from code if available, or generate creative one
-                    # Look for filename in first few lines of code
-                    ext = get_extension(lang_for_generation)
-                    file_name = None
-                    
-                    # Try to find filename in comments (AI might include it)
-                    for line in content.split('\n')[:5]:
-                        if 'file:' in line.lower() or 'filename:' in line.lower():
-                            # Extract filename from comment
-                            parts = line.lower().split(':')
-                            if len(parts) > 1:
-                                potential_name = parts[1].strip().replace('.py', '').replace('.js', '')
-                                if potential_name and len(potential_name) < 50:
-                                    file_name = f"{potential_name}.{ext}"
-                                    break
-                    
-                    # If no filename found, generate creative one based on content
-                    if not file_name:
-                        # Use hash of content for uniqueness
-                        import hashlib
-                        content_hash = hashlib.md5(content.encode()).hexdigest()[:6]
+                        gemini_key = os.environ.get("GEMINI_API_KEY")
+                        # Pass the specific language to generator
+                        content = get_random_content(gemini_key, lang_for_generation) 
                         
-                        # Creative topic-based names
-                        topics = ['tutorial', 'example', 'guide', 'demo', 'learning']
-                        import random
-                        topic = random.choice(topics)
-                        file_name = f"{lang_for_generation}_{topic}_{content_hash}.{ext}"
-                    
-                    # Clean filename
-                    file_name = file_name.replace(' ', '_').replace('-', '_').lower()
-                    
-                    try:
-                        repo.create_file(
-                            path=file_name,
-                            message=f"Add {lang_for_generation} learning example",
-                            content=content,
-                            branch="main"
-                        )
-                        
-                        # Log success & Update Limits
-                        try:
-                            content_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
-                            supabase.table("generated_history").insert({
-                                "user_id": user['id'],
-                                "content_snippet": content[:100],
-                                "language": lang_for_generation, 
-                                "content_hash": content_hash
-                            }).execute()
+                        # Guard against API errors
+                        if not content.startswith("Error") and "not found" not in content:
+                            # Extract filename from code if available, or generate creative one
+                            ext = get_extension(lang_for_generation)
+                            file_name = None
                             
-                            # Increment Counters / Update TS
-                            supabase.table("user_settings").update({
-                                "last_commit_ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                                "daily_commit_count": user.get('daily_commit_count', 0) + 1
-                            }).eq("id", user['id']).execute()
+                            # Try to find filename in comments (AI might include it)
+                            for line in content.split('\n')[:5]:
+                                if 'file:' in line.lower() or 'filename:' in line.lower():
+                                    parts = line.lower().split(':')
+                                    if len(parts) > 1:
+                                        potential_name = parts[1].strip().replace('.py', '').replace('.js', '')
+                                        if potential_name and len(potential_name) < 50:
+                                            file_name = f"{potential_name}.{ext}"
+                                            break
+                            
+                            # If no filename found, generate creative one based on content
+                            if not file_name:
+                                import hashlib
+                                content_hash = hashlib.md5(content.encode()).hexdigest()[:6]
+                                topics = ['tutorial', 'example', 'guide', 'demo', 'learning']
+                                import random
+                                topic = random.choice(topics)
+                                file_name = f"{lang_for_generation}_{topic}_{content_hash}.{ext}"
+                            
+                            # Clean filename
+                            file_name = file_name.replace(' ', '_').replace('-', '_').lower()
+                            
+                            try:
+                                repo.create_file(
+                                    path=file_name,
+                                    message=f"Add {lang_for_generation} learning example",
+                                    content=content,
+                                    branch="main"
+                                )
+                                
+                                # Log success & Update Limits
+                                try:
+                                    import hashlib
+                                    content_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
+                                    supabase.table("generated_history").insert({
+                                        "user_id": user['id'],
+                                        "content_snippet": content[:100],
+                                        "language": lang_for_generation, 
+                                        "content_hash": content_hash
+                                    }).execute()
+                                    
+                                    # Increment Counters / Update TS
+                                    supabase.table("user_settings").update({
+                                        "last_commit_ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                                        "daily_commit_count": user.get('daily_commit_count', 0) + 1
+                                    }).eq("id", user['id']).execute()
 
-                        except Exception as db_error:
-                             logs.append(f"Warning: DB Log failed: {db_error}")
+                                except Exception as db_error:
+                                    logs.append(f"Warning: DB Log failed: {db_error}")
 
-                        logs.append(f"Successfully committed to {full_repo_name}")
-                        
-                    except Exception as e:
-                        logs.append(f"Failed to commit: {e}")
+                                logs.append(f"Successfully committed to {full_repo_name}")
+                                
+                            except Exception as e:
+                                logs.append(f"Failed to commit: {e}")
+                        else:
+                            logs.append(f"Skipping commit for user {username}: Generation failed - {content}")
 
                     # === LEETCODE PLAN BONUS ===
                     # If user is owner or has leetcode plan, also commit to their leetcode repo
