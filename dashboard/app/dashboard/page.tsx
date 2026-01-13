@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase, getSupabaseClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Settings, Activity, Power, Save, History, User, Code, Clock, Languages, Check, X, AlertCircle, ChevronDown, Github, Globe, Home } from 'lucide-react'
@@ -66,7 +66,17 @@ export default function Dashboard() {
             // If auto-create, call API to create the repo
             if (autoCreate) {
                 // Get provider token from session
-                const { data: { session } } = await supabase.auth.getSession()
+                console.log('🔄 Getting session...')
+                const client = getSupabaseClient()
+
+                // Add timeout to getSession
+                const sessionPromise = client.auth.getSession()
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Session retrieval timed out')), 5000)
+                )
+
+                const { data: sessionData } = await Promise.race([sessionPromise, timeoutPromise]) as any
+                const session = sessionData?.session
                 const githubToken = session?.provider_token
 
                 console.log('🔑 GitHub Token present:', !!githubToken)
