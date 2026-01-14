@@ -15,10 +15,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GitMaxer - Automate Your Contributions",
+  title: "GitMaxer - Automate Your GitHub Contributions",
   description: "Keep your GitHub streak alive with AI-generated contributions.",
   icons: {
-    icon: '/logo.jpg',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/logo.jpg', type: 'image/jpeg' },
+    ],
+    shortcut: '/logo.jpg',
+    apple: '/logo.jpg',
   },
 };
 
