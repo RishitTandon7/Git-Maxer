@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Rocket, Code, Terminal, Clock, CheckCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '../providers/AuthProvider'
 
 export function EnterpriseProjectPanel({ userId, isActive }: { userId: string, isActive: boolean }) {
+    const { githubToken } = useAuth()
     const [project, setProject] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [formData, setFormData] = useState({
@@ -47,12 +49,14 @@ export function EnterpriseProjectPanel({ userId, isActive }: { userId: string, i
         try {
             const res = await fetch('/api/enterprise/project', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId,
                     projectName: formData.name,
                     repoName: formData.repoName || formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
                     projectDescription: formData.description,
-                    techStack: formData.stack.split(',').map(s => s.trim())
+                    techStack: formData.stack.split(',').map(s => s.trim()),
+                    githubToken  // Pass the token from context
                 })
             })
             const data = await res.json()

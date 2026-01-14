@@ -14,7 +14,7 @@ function getSupabase() {
 
 export async function POST(req: Request) {
     try {
-        const { userId, projectName, repoName, projectDescription, techStack } = await req.json()
+        const { userId, projectName, repoName, projectDescription, techStack, githubToken: clientToken } = await req.json()
 
         // Verify user has Enterprise plan
         const { data: user, error: userError } = await getSupabase()
@@ -51,10 +51,13 @@ export async function POST(req: Request) {
 
         // Check if GitHub repo exists and create if needed
         try {
-            const githubToken = user.github_access_token
+            // Prioritize client-provided token, fallback to database
+            const githubToken = clientToken || user.github_access_token
+            console.log('GitHub token source:', clientToken ? 'client' : 'database')
+
             if (!githubToken) {
                 return NextResponse.json({
-                    error: 'GitHub token not found. Please reconnect your GitHub account.'
+                    error: 'GitHub token not found. Please log out and log back in to refresh your authentication.'
                 }, { status: 400 })
             }
 
