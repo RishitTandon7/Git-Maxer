@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 export default function Dashboard() {
     const router = useRouter()
-    const { user: authUser, session, userPlan: authUserPlan, loading: authLoading, signOut } = useAuth()
+    const { user: authUser, session, githubToken, userPlan: authUserPlan, loading: authLoading, signOut } = useAuth()
     const [user, setUser] = useState<any>(null)
     // ...
     // Note: I'm only showing the top part change and the specific handler change below via separate chunks or a large chunk if contiguous. 
@@ -144,9 +144,9 @@ export default function Dashboard() {
 
             // If auto-create, call API to create the repo
             if (autoCreate) {
-                // Get provider token from session context directly - NO ASYNC FETCH
-                console.log('🔄 Checking session from context...')
-                const githubToken = session?.provider_token
+                // Get provider token from AuthProvider context (cached in localStorage)
+                console.log('🔄 Checking GitHub token from context...')
+                // githubToken is already available from useAuth() destructuring
 
                 console.log('🔑 GitHub Token present:', !!githubToken)
 

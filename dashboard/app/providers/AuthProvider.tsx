@@ -9,6 +9,7 @@ type PlanType = 'free' | 'pro' | 'enterprise' | 'leetcode' | 'owner' | null
 interface AuthContextType {
     user: User | null
     session: Session | null
+    githubToken: string | null
     userPlan: PlanType
     loading: boolean
     signOut: () => Promise<void>
@@ -19,8 +20,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [session, setSession] = useState<Session | null>(null)
+    const [githubToken, setGithubToken] = useState<string | null>(null)
     const [userPlan, setUserPlan] = useState<PlanType>(null)
     const [loading, setLoading] = useState(true)
+
+    // Load cached GitHub token on mount
+    useEffect(() => {
+        const cachedToken = localStorage.getItem('githubToken')
+        if (cachedToken) {
+            setGithubToken(cachedToken)
+            console.log('🔑 GitHub token loaded from cache')
+        }
+    }, [])
 
     useEffect(() => {
         // FAIL-SAFE: Force loading off after 3 seconds no matter what
@@ -104,6 +115,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(session.user)
                 setSession(session)
 
+                // Store GitHub token if available (only present on initial sign-in)
+                if (session.provider_token) {
+                    setGithubToken(session.provider_token)
+                    localStorage.setItem('githubToken', session.provider_token)
+                    console.log('🔑 GitHub token stored from sign-in')
+                }
+
                 // Check cache first
                 const cachedPlan = localStorage.getItem('userPlan')
                 if (cachedPlan) {
@@ -134,8 +152,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
                 setUser(null)
                 setSession(null)
+                setGithubToken(null)
                 setUserPlan(null)
                 localStorage.removeItem('userPlan') // Clear cache on logout
+                localStorage.removeItem('githubToken') // Clear token on logout
             }
         })
 
@@ -149,13 +169,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signOut()
         setUser(null)
         setSession(null)
+        setGithubToken(null)
         setUserPlan(null)
         localStorage.removeItem('userPlan') // Clear cached plan
+        localStorage.removeItem('githubToken') // Clear token
         window.location.href = '/' // Force full page reload to clear all state
     }
 
     return (
-        <AuthContext.Provider value={{ user, session, userPlan, loading, signOut }}>
+        <AuthContext.Provider value={{ user, session, githubToken, userPlan, loading, signOut }}>
             {children}
         </AuthContext.Provider>
     )
