@@ -1,15 +1,50 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+export const dynamic = 'force-dynamic'
+
+// Get service client for database access
+function getServiceClient() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    return createClient(supabaseUrl, serviceRoleKey, {
+        auth: { persistSession: false, autoRefreshToken: false }
+    })
+}
 
 export async function POST(request: Request) {
     try {
-        const { repoName, userId, planType, githubToken } = await request.json()
+        const { repoName, userId, planType, githubToken: clientToken } = await request.json()
 
-        if (!githubToken) {
-            return NextResponse.json({ error: 'Missing GitHub Token' }, { status: 401 })
+        if (!userId) {
+            return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
         }
 
         if (!['leetcode', 'enterprise', 'owner'].includes(planType)) {
             return NextResponse.json({ error: 'Invalid plan type' }, { status: 400 })
+        }
+
+        // Try to get GitHub token - prioritize client token, fallback to database
+        let githubToken = clientToken
+
+        if (!githubToken) {
+            console.log('No client token provided, fetching from database...')
+            const supabase = getServiceClient()
+            const { data: settings, error } = await supabase
+                .from('user_settings')
+                .select('github_access_token')
+                .eq('id', userId)
+                .single()
+
+            if (error || !settings?.github_access_token) {
+                console.error('Could not retrieve token from database:', error)
+                return NextResponse.json({
+                    error: 'GitHub token not found. Please log out and log back in to refresh your authentication.'
+                }, { status: 401 })
+            }
+
+            githubToken = settings.github_access_token
+            console.log('GitHub token retrieved from database')
         }
 
         const headers = {
