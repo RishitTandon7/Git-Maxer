@@ -144,15 +144,9 @@ export default function Dashboard() {
 
             // If auto-create, call API to create the repo
             if (autoCreate) {
-                // Get provider token from AuthProvider context (cached in localStorage)
-                console.log('🔄 Checking GitHub token from context...')
-                // githubToken is already available from useAuth() destructuring
-
-                console.log('🔑 GitHub Token present:', !!githubToken)
-
-                if (!githubToken) {
-                    throw new Error('Could not retrieve GitHub token. Please try logging out and back in.')
-                }
+                // Token will be fetched from database by API if not available here
+                console.log('🔄 Preparing to call create-leetcode-repo API...')
+                console.log('🔑 GitHub Token from context:', !!githubToken ? 'present' : 'will use database fallback')
 
                 console.log('⏳ Calling create-leetcode-repo API...')
                 const controller = new AbortController()
