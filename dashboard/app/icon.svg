@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#0D1117"/>
+  
+  <!-- Moon circle -->
+  <circle cx="16" cy="14" r="9" fill="#FFFFFF"/>
+  
+  <!-- GitHub Octocat silhouette simplified -->
+  <path d="M16 6c-4.4 0-8 3.6-8 8 0 3.5 2.3 6.5 5.5 7.6.4.1.5-.2.5-.4v-1.5c-2.2.5-2.7-1.1-2.7-1.1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.2 1.9.9 2.3.7.1-.5.3-.9.5-1.1-1.8-.2-3.7-.9-3.7-4 0-.9.3-1.6.8-2.2-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8.6-.2 1.3-.3 2-.3s1.4.1 2 .3c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.2 0 3.1-1.9 3.8-3.7 4 .3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4C21.7 20.5 24 17.5 24 14c0-4.4-3.6-8-8-8z" fill="#0D1117"/>
+  
+  <!-- Contribution grid hint at bottom -->
+  <rect x="4" y="26" width="2" height="2" rx="0.5" fill="#238636" opacity="0.8"/>
+  <rect x="7" y="26" width="2" height="2" rx="0.5" fill="#39D353" opacity="0.8"/>
+  <rect x="10" y="26" width="2" height="2" rx="0.5" fill="#238636" opacity="0.8"/>
+  <rect x="13" y="26" width="2" height="2" rx="0.5" fill="#39D353" opacity="0.8"/>
+  <rect x="16" y="26" width="2" height="2" rx="0.5" fill="#39D353" opacity="0.8"/>
+  <rect x="19" y="26" width="2" height="2" rx="0.5" fill="#238636" opacity="0.8"/>
+  <rect x="22" y="26" width="2" height="2" rx="0.5" fill="#39D353" opacity="0.8"/>
+  <rect x="25" y="26" width="2" height="2" rx="0.5" fill="#238636" opacity="0.8"/>
+</svg>
