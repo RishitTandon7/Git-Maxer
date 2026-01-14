@@ -68,7 +68,9 @@ export async function POST(req: Request) {
             })
 
             if (!userResponse.ok) {
-                throw new Error('Failed to authenticate with GitHub')
+                const errorText = await userResponse.text()
+                console.error('GitHub auth failed:', userResponse.status, errorText)
+                throw new Error(`GitHub authentication failed: ${userResponse.status} - ${errorText}`)
             }
 
             const githubUser = await userResponse.json()
