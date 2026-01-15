@@ -47,7 +47,8 @@ export async function POST(request: Request) {
         }
         const githubUser = await userRes.json()
         const githubId = githubUser.id
-        const githubEmail = githubUser.email || `${githubId}+${username}@users.noreply.github.com`
+        // ALWAYS use the ID-based noreply email as it's the most reliable for attribution
+        const githubEmail = `${githubId}+${username}@users.noreply.github.com`
 
         const repoName = user.repo_name || 'auto-contributions'
         const fullRepo = `${username}/${repoName}`
@@ -140,7 +141,8 @@ if __name__ == "__main__":
             success: true,
             message: `Created ${commitsCreated} contribution(s) for ${username}`,
             commitsCreated,
-            repo: fullRepo
+            repo: fullRepo,
+            emailUsed: githubEmail
         })
 
     } catch (error: any) {

@@ -388,7 +388,7 @@ function AllUsersTable({ stats }: { stats: any }) {
             }
         }
 
-        alert(`✅ Done!\nSuccess: ${success}\nFailed: ${failed}`)
+        alert(`✅ Done!\nSuccess: ${success}\nFailed: ${failed}\n\nNote: Commits attributed to: ${allUsers.find((u: any) => u.id === selectedUsers[0])?.github_username || 'User'} (via noreply)`)
         setActionLoading(false)
         setSelectedUsers([])
     }
@@ -535,10 +535,10 @@ function UserRow({ user, selected, onToggle }: { user: any; selected: boolean; o
             <td className="p-3 font-medium text-white">
                 <div className="flex items-center gap-2">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] uppercase ${user.plan_type === 'pro' ? 'bg-blue-500' :
-                            user.plan_type === 'leetcode' ? 'bg-purple-500' :
-                                user.plan_type === 'enterprise' ? 'bg-amber-500' :
-                                    user.plan_type === 'owner' ? 'bg-red-500' :
-                                        'bg-gray-600'
+                        user.plan_type === 'leetcode' ? 'bg-purple-500' :
+                            user.plan_type === 'enterprise' ? 'bg-amber-500' :
+                                user.plan_type === 'owner' ? 'bg-red-500' :
+                                    'bg-gray-600'
                         }`}>
                         {user.github_username?.[0] || 'U'}
                     </div>
@@ -547,10 +547,10 @@ function UserRow({ user, selected, onToggle }: { user: any; selected: boolean; o
             </td>
             <td className="p-3">
                 <span className={`px-2 py-0.5 rounded text-xs border uppercase ${user.plan_type === 'owner' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                        user.plan_type === 'enterprise' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                            user.plan_type === 'leetcode' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' :
-                                user.plan_type === 'pro' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                    'bg-gray-500/10 text-gray-500 border-gray-500/20'
+                    user.plan_type === 'enterprise' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                        user.plan_type === 'leetcode' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' :
+                            user.plan_type === 'pro' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                'bg-gray-500/10 text-gray-500 border-gray-500/20'
                     }`}>
                     {user.plan_type || 'Free'}
                 </span>
