@@ -75,6 +75,25 @@ class handler(BaseHTTPRequestHandler):
                     full_repo_name = f"{github_username}/{repo_name}"
                     
                     logs.append(f"Processing user {user['id']} for repo {full_repo_name}")
+                    
+                    # === DAILY RESET CHECK ===
+                    # Reset daily_commit_count if last commit was on a different day
+                    last_commit_str = user.get('last_commit_ts')
+                    if last_commit_str:
+                        try:
+                            last_commit_dt = datetime.datetime.fromisoformat(last_commit_str.replace('Z', '+00:00'))
+                            today_utc = datetime.datetime.now(datetime.timezone.utc).date()
+                            if last_commit_dt.date() < today_utc:
+                                # It's a new day! Reset the counter
+                                supabase.table("user_settings").update({
+                                    "daily_commit_count": 0,
+                                    "leetcode_daily_count": 0
+                                }).eq("id", user['id']).execute()
+                                user['daily_commit_count'] = 0
+                                user['leetcode_daily_count'] = 0
+                                logs.append(f"Reset daily counts for {github_username} (new day)")
+                        except Exception as reset_error:
+                            logs.append(f"Warning: Could not reset daily count for {github_username}: {reset_error}")
 
                     # Initialize Github with user's stored OAuth token
                     user_token = user.get('github_access_token')
@@ -116,8 +135,11 @@ class handler(BaseHTTPRequestHandler):
 
                     if commit_time_str:
                         try:
-                            # Parse "HH:MM"
-                            target_hour, target_minute = map(int, commit_time_str.split(':'))
+                            # Parse "HH:MM" or "HH:MM:SS" format
+                            time_parts = commit_time_str.split(':')
+                            target_hour = int(time_parts[0])
+                            target_minute = int(time_parts[1]) if len(time_parts) > 1 else 0
+                            # Ignore seconds if present
                             target_time = now_ist.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
                             
                             # Run if current time is past the target time
@@ -126,8 +148,8 @@ class handler(BaseHTTPRequestHandler):
                                 should_run_now = True
                             else:
                                 logs.append(f"User {user['github_username']}: Too early ({now_ist.strftime('%H:%M')} < {commit_time_str})")
-                        except ValueError:
-                             logs.append(f"User {user['github_username']}: Invalid time format {commit_time_str}")
+                        except (ValueError, IndexError) as e:
+                             logs.append(f"User {user['github_username']}: Invalid time format {commit_time_str} - {e}")
                     else:
                         # No specific time set - run between 8 PM to 12 AM IST
                         # Daily limit (daily_commit_count) will prevent duplicates
