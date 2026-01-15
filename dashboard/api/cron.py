@@ -160,7 +160,7 @@ class handler(BaseHTTPRequestHandler):
                     if is_owner:
                         logs.append(f"Owner {username}: Bypassing all limits.")
                     elif not skip_regular_commit:
-                        # 1. FREE TIER: 1 Commit per Week
+                        # FREE TIER: 1 Commit per Week
                         if plan == 'free':
                             last_commit_str = user.get('last_commit_ts')
                             if last_commit_str:
@@ -169,12 +169,11 @@ class handler(BaseHTTPRequestHandler):
                                 if days_diff < 7:
                                     logs.append(f"Free Plan Limit: User {username} already committed {days_diff} days ago. Skipping (Wait 7 days).")
                                     skip_regular_commit = True
-
-                        # 2. PRO TIER: 1 Commit per Day (excluding repo creation)
-                        elif plan == 'pro':
+                        else:
+                            # PRO/LEETCODE: 1 Commit per Day
                             commits_today = user.get('daily_commit_count', 0)
                             if commits_today >= 1:
-                                logs.append(f"Pro Plan Limit: User {username} reached 1 commit today.")
+                                logs.append(f"{plan.title()} Plan Limit: User {username} reached 1 commit today.")
                                 skip_regular_commit = True
                     
                     # === REGULAR COMMIT (if not skipped) ===
