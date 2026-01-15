@@ -63,6 +63,12 @@ export async function GET() {
             .order('created_at', { ascending: false })
             .limit(10)
 
+        // 8. ALL Users (for admin table)
+        const { data: allUsers } = await supabaseAdmin
+            .from('user_settings')
+            .select('*')
+            .order('created_at', { ascending: false })
+
         return NextResponse.json({
             liveUsers: activeUsers || 0,
             totalUsers: totalUsers || 0,
@@ -70,7 +76,8 @@ export async function GET() {
             commitsToday: commitsToday || 0,
             totalRevenue: totalRevenue * 80, // INR conversion
             recentUsers: recentUsers || [],
-            recentLogs: recentLogs || []
+            recentLogs: recentLogs || [],
+            allUsers: allUsers || []
         })
 
     } catch (error) {

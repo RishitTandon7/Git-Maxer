@@ -121,7 +121,7 @@ def contribution_${dateStr.replace(/-/g, '_')}():
             }
 
             // Reset their daily count
-            await supabase.table('user_settings').update({
+            await supabase.from('user_settings').update({
                 daily_commit_count: 0
             }).eq('id', user.id)
 

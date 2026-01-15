@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Users, DollarSign, Activity, TrendingUp, AlertTriangle, Shield, Terminal, Database, Globe, Search, ArrowLeft, Eye } from 'lucide-react'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
 
 // Reuse the verify logic or just protect heavily
 // In real app, middleware protection is needed.
@@ -139,58 +138,8 @@ export default function AdminPage() {
                             </div>
                         </div>
 
-                        {/* Recent User Table */}
-                        <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-bold text-gray-200 flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-green-500" />
-                                    Recent Registrations (Real-Time)
-                                </h3>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-sm text-gray-400">
-                                    <thead className="border-b border-white/5 text-xs uppercase font-mono bg-white/5">
-                                        <tr>
-                                            <th className="p-3">User</th>
-                                            <th className="p-3">Plan</th>
-                                            <th className="p-3">Status</th>
-                                            <th className="p-3">Joined</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {stats?.recentUsers?.length > 0 ? (
-                                            stats.recentUsers.map((user: any, i: number) => (
-                                                <tr key={i} className="hover:bg-white/5 transition-colors">
-                                                    <td className="p-3 font-medium text-white flex items-center gap-2">
-                                                        <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 flex items-center justify-center text-[10px] uppercase">
-                                                            {user.github_username?.[0] || 'U'}
-                                                        </div>
-                                                        {user.github_username || 'Anonymous'}
-                                                    </td>
-                                                    <td className="p-3">
-                                                        <span className={`px-2 py-0.5 rounded text-xs border uppercase ${user.plan_type === 'owner' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                                                            user.plan_type === 'enterprise' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                                                                user.plan_type === 'pro' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                                                    'bg-gray-500/10 text-gray-500 border-gray-500/20'
-                                                            }`}>
-                                                            {user.plan_type || 'Free'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-3"><span className="text-green-500 flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Active</span></td>
-                                                    <td className="p-3 font-mono text-xs text-gray-600">
-                                                        {new Date(user.created_at).toLocaleDateString()}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan={4} className="p-4 text-center text-gray-600 italic">No users found in database yet.</td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        {/* All Users Table */}
+                        <AllUsersTable stats={stats} />
                     </div>
 
                     {/* Right Col: Controls & Terminal */}
@@ -309,5 +258,139 @@ function ActionButton({ label, color }: any) {
         <button className={`p-3 rounded-lg border bg-[#050505] text-xs font-bold transition-all active:scale-95 ${theme}`}>
             {label}
         </button>
+    )
+}
+
+function AllUsersTable({ stats }: { stats: any }) {
+    const [filterPlan, setFilterPlan] = useState('all')
+    const [searchQuery, setSearchQuery] = useState('')
+
+    // Use allUsers from the admin stats API (bypasses RLS)
+    const allUsers = stats?.allUsers || []
+    const loading = !stats
+
+    // Filter users
+    const filteredUsers = allUsers.filter(user => {
+        const matchesSearch = user.github_username?.toLowerCase().includes(searchQuery.toLowerCase())
+        const plan = user.plan_type || 'free'
+        const matchesPlan = filterPlan === 'all' ||
+            (filterPlan === 'paid' && ['pro', 'leetcode', 'enterprise', 'owner'].includes(plan)) ||
+            (filterPlan === 'unpaid' && plan === 'free') ||
+            plan === filterPlan
+        return matchesSearch && matchesPlan
+    })
+
+    // Plan counts
+    const counts = {
+        all: allUsers.length,
+        paid: allUsers.filter(u => ['pro', 'leetcode', 'enterprise', 'owner'].includes(u.plan_type)).length,
+        unpaid: allUsers.filter(u => !u.plan_type || u.plan_type === 'free').length,
+        pro: allUsers.filter(u => u.plan_type === 'pro').length,
+        leetcode: allUsers.filter(u => u.plan_type === 'leetcode').length,
+        enterprise: allUsers.filter(u => u.plan_type === 'enterprise').length,
+        owner: allUsers.filter(u => u.plan_type === 'owner').length,
+    }
+
+    const tabs = [
+        { key: 'all', label: 'All' },
+        { key: 'paid', label: '💰 Paid' },
+        { key: 'unpaid', label: 'Free' },
+        { key: 'pro', label: 'Pro' },
+        { key: 'leetcode', label: 'LeetCode' },
+        { key: 'enterprise', label: 'Enterprise' },
+        { key: 'owner', label: 'Owner' },
+    ]
+
+    return (
+        <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl p-6">
+            <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
+                <h3 className="font-bold text-gray-200 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-green-500" />
+                    All Users ({filteredUsers.length})
+                </h3>
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 pr-3 py-1.5 bg-black/50 border border-white/20 rounded-lg text-sm text-white focus:border-green-500 outline-none"
+                    />
+                </div>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex flex-wrap gap-2 mb-4">
+                {tabs.map(tab => (
+                    <button
+                        key={tab.key}
+                        onClick={() => setFilterPlan(tab.key)}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${filterPlan === tab.key
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/50'
+                            : 'bg-white/5 text-gray-400 border border-transparent hover:bg-white/10'
+                            }`}
+                    >
+                        {tab.label} ({counts[tab.key as keyof typeof counts]})
+                    </button>
+                ))}
+            </div>
+
+            {/* User Table */}
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                <table className="w-full text-left text-sm text-gray-400">
+                    <thead className="border-b border-white/5 text-xs uppercase font-mono bg-white/5 sticky top-0">
+                        <tr>
+                            <th className="p-3">User</th>
+                            <th className="p-3">Plan</th>
+                            <th className="p-3">Status</th>
+                            <th className="p-3">Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                        {loading ? (
+                            <tr><td colSpan={4} className="p-4 text-center text-gray-600">Loading...</td></tr>
+                        ) : filteredUsers.length > 0 ? (
+                            filteredUsers.map((user: any, i: number) => (
+                                <tr key={user.id || i} className="hover:bg-white/5 transition-colors">
+                                    <td className="p-3 font-medium text-white flex items-center gap-2">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] uppercase ${user.plan_type === 'pro' ? 'bg-blue-500' :
+                                            user.plan_type === 'leetcode' ? 'bg-purple-500' :
+                                                user.plan_type === 'enterprise' ? 'bg-amber-500' :
+                                                    user.plan_type === 'owner' ? 'bg-red-500' :
+                                                        'bg-gray-600'
+                                            }`}>
+                                            {user.github_username?.[0] || 'U'}
+                                        </div>
+                                        {user.github_username || 'Anonymous'}
+                                    </td>
+                                    <td className="p-3">
+                                        <span className={`px-2 py-0.5 rounded text-xs border uppercase ${user.plan_type === 'owner' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                            user.plan_type === 'enterprise' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                                user.plan_type === 'leetcode' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' :
+                                                    user.plan_type === 'pro' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                                        'bg-gray-500/10 text-gray-500 border-gray-500/20'
+                                            }`}>
+                                            {user.plan_type || 'Free'}
+                                        </span>
+                                    </td>
+                                    <td className="p-3">
+                                        <span className={`flex items-center gap-1 ${user.pause_bot ? 'text-gray-500' : 'text-green-500'}`}>
+                                            <div className={`w-1.5 h-1.5 rounded-full ${user.pause_bot ? 'bg-gray-500' : 'bg-green-500 animate-pulse'}`} />
+                                            {user.pause_bot ? 'Paused' : 'Active'}
+                                        </span>
+                                    </td>
+                                    <td className="p-3 font-mono text-xs text-gray-600">
+                                        {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr><td colSpan={4} className="p-4 text-center text-gray-600 italic">No users found.</td></tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     )
 }
