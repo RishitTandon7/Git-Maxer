@@ -151,8 +151,8 @@ export default function AdminPage() {
                                 Quick Actions
                             </h3>
                             <div className="grid grid-cols-2 gap-3">
-                                <ActionButton label="Maintenance Mode" color="red" />
-                                <ActionButton label="Grant Credits" color="green" />
+                                <BackfillButton />
+                                <CronButton />
                                 <ActionButton label="Clean Cache" color="blue" />
                                 <ActionButton label="Emergency Kill" color="red" />
                             </div>
@@ -261,16 +261,83 @@ function ActionButton({ label, color }: any) {
     )
 }
 
+function BackfillButton() {
+    const [loading, setLoading] = useState(false)
+    const [result, setResult] = useState<string | null>(null)
+
+    const runBackfill = async () => {
+        if (!confirm('Run backfill for past 2 days? This will create commits for all Pro/LeetCode users.')) return
+        setLoading(true)
+        setResult(null)
+        try {
+            const res = await fetch('/api/backfill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ daysToBackfill: 2 })
+            })
+            const data = await res.json()
+            setResult(`✅ ${data.message || 'Done!'}\n${data.results?.map((r: any) => `${r.user}: ${r.status} (${r.commitsCreated || 0} commits)`).join('\n') || ''}`)
+            alert(`Backfill Complete!\n\n${data.message}`)
+        } catch (e: any) {
+            setResult(`❌ Error: ${e.message}`)
+            alert(`Backfill failed: ${e.message}`)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <button
+            onClick={runBackfill}
+            disabled={loading}
+            className="p-3 rounded-lg border bg-[#050505] text-xs font-bold transition-all active:scale-95 hover:bg-orange-500/20 hover:border-orange-500/50 text-orange-400 border-orange-500/20 disabled:opacity-50"
+        >
+            {loading ? '⏳ Running...' : '🔄 Run Backfill (2 days)'}
+        </button>
+    )
+}
+
+function CronButton() {
+    const [loading, setLoading] = useState(false)
+
+    const runCron = async () => {
+        if (!confirm('Run cron job now? This will process all pending contributions.')) return
+        setLoading(true)
+        try {
+            const res = await fetch('/api/cron')
+            const data = await res.json()
+            alert(`Cron Complete!\n\n${data.output?.substring(0, 1000) || JSON.stringify(data)}`)
+        } catch (e: any) {
+            alert(`Cron failed: ${e.message}`)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <button
+            onClick={runCron}
+            disabled={loading}
+            className="p-3 rounded-lg border bg-[#050505] text-xs font-bold transition-all active:scale-95 hover:bg-green-500/20 hover:border-green-500/50 text-green-400 border-green-500/20 disabled:opacity-50"
+        >
+            {loading ? '⏳ Running...' : '▶️ Run Cron Now'}
+        </button>
+    )
+}
+
 function AllUsersTable({ stats }: { stats: any }) {
     const [filterPlan, setFilterPlan] = useState('all')
     const [searchQuery, setSearchQuery] = useState('')
+    const [selectedUsers, setSelectedUsers] = useState<string[]>([])
+    const [targetDate, setTargetDate] = useState(new Date().toISOString().split('T')[0])
+    const [actionLoading, setActionLoading] = useState(false)
 
     // Use allUsers from the admin stats API (bypasses RLS)
     const allUsers = stats?.allUsers || []
     const loading = !stats
 
     // Filter users
-    const filteredUsers = allUsers.filter(user => {
+    const filteredUsers = allUsers.filter((user: any) => {
         const matchesSearch = user.github_username?.toLowerCase().includes(searchQuery.toLowerCase())
         const plan = user.plan_type || 'free'
         const matchesPlan = filterPlan === 'all' ||
@@ -279,6 +346,52 @@ function AllUsersTable({ stats }: { stats: any }) {
             plan === filterPlan
         return matchesSearch && matchesPlan
     })
+
+    const toggleUser = (userId: string) => {
+        setSelectedUsers(prev =>
+            prev.includes(userId)
+                ? prev.filter(id => id !== userId)
+                : [...prev, userId]
+        )
+    }
+
+    const selectAll = () => {
+        if (selectedUsers.length === filteredUsers.length) {
+            setSelectedUsers([])
+        } else {
+            setSelectedUsers(filteredUsers.map((u: any) => u.id))
+        }
+    }
+
+    const runBulkContribute = async () => {
+        if (selectedUsers.length === 0) return alert('Select at least one user')
+        if (!confirm(`Contribute for ${selectedUsers.length} user(s) on ${targetDate}?`)) return
+
+        setActionLoading(true)
+        let success = 0, failed = 0
+
+        for (const userId of selectedUsers) {
+            const user = allUsers.find((u: any) => u.id === userId)
+            if (!user) continue
+
+            try {
+                const res = await fetch('/api/admin/contribute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, username: user.github_username, date: targetDate })
+                })
+                const data = await res.json()
+                if (data.success) success++
+                else failed++
+            } catch {
+                failed++
+            }
+        }
+
+        alert(`✅ Done!\nSuccess: ${success}\nFailed: ${failed}`)
+        setActionLoading(false)
+        setSelectedUsers([])
+    }
 
     // Plan counts
     const counts = {
@@ -320,6 +433,37 @@ function AllUsersTable({ stats }: { stats: any }) {
                 </div>
             </div>
 
+            {/* Bulk Action Panel */}
+            {selectedUsers.length > 0 && (
+                <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 mb-4 flex flex-wrap items-center gap-4">
+                    <span className="text-purple-400 font-bold text-sm">
+                        {selectedUsers.length} user(s) selected
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-gray-400 text-xs">Date:</span>
+                        <input
+                            type="date"
+                            value={targetDate}
+                            onChange={(e) => setTargetDate(e.target.value)}
+                            className="px-3 py-1.5 bg-black/50 border border-white/20 rounded-lg text-sm text-white"
+                        />
+                    </div>
+                    <button
+                        onClick={runBulkContribute}
+                        disabled={actionLoading}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded-lg disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {actionLoading ? '⏳ Processing...' : `▶️ Contribute for ${selectedUsers.length} users`}
+                    </button>
+                    <button
+                        onClick={() => setSelectedUsers([])}
+                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-gray-300 text-sm rounded-lg"
+                    >
+                        Clear
+                    </button>
+                </div>
+            )}
+
             {/* Filter Tabs */}
             <div className="flex flex-wrap gap-2 mb-4">
                 {tabs.map(tab => (
@@ -341,56 +485,85 @@ function AllUsersTable({ stats }: { stats: any }) {
                 <table className="w-full text-left text-sm text-gray-400">
                     <thead className="border-b border-white/5 text-xs uppercase font-mono bg-white/5 sticky top-0">
                         <tr>
+                            <th className="p-3 w-10">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                                    onChange={selectAll}
+                                    className="w-4 h-4 accent-green-500 cursor-pointer"
+                                />
+                            </th>
                             <th className="p-3">User</th>
                             <th className="p-3">Plan</th>
                             <th className="p-3">Status</th>
-                            <th className="p-3">Joined</th>
+                            <th className="p-3">Last Commit</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
                         {loading ? (
-                            <tr><td colSpan={4} className="p-4 text-center text-gray-600">Loading...</td></tr>
+                            <tr><td colSpan={5} className="p-4 text-center text-gray-600">Loading...</td></tr>
                         ) : filteredUsers.length > 0 ? (
                             filteredUsers.map((user: any, i: number) => (
-                                <tr key={user.id || i} className="hover:bg-white/5 transition-colors">
-                                    <td className="p-3 font-medium text-white flex items-center gap-2">
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] uppercase ${user.plan_type === 'pro' ? 'bg-blue-500' :
-                                            user.plan_type === 'leetcode' ? 'bg-purple-500' :
-                                                user.plan_type === 'enterprise' ? 'bg-amber-500' :
-                                                    user.plan_type === 'owner' ? 'bg-red-500' :
-                                                        'bg-gray-600'
-                                            }`}>
-                                            {user.github_username?.[0] || 'U'}
-                                        </div>
-                                        {user.github_username || 'Anonymous'}
-                                    </td>
-                                    <td className="p-3">
-                                        <span className={`px-2 py-0.5 rounded text-xs border uppercase ${user.plan_type === 'owner' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                                            user.plan_type === 'enterprise' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                                                user.plan_type === 'leetcode' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' :
-                                                    user.plan_type === 'pro' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                                        'bg-gray-500/10 text-gray-500 border-gray-500/20'
-                                            }`}>
-                                            {user.plan_type || 'Free'}
-                                        </span>
-                                    </td>
-                                    <td className="p-3">
-                                        <span className={`flex items-center gap-1 ${user.pause_bot ? 'text-gray-500' : 'text-green-500'}`}>
-                                            <div className={`w-1.5 h-1.5 rounded-full ${user.pause_bot ? 'bg-gray-500' : 'bg-green-500 animate-pulse'}`} />
-                                            {user.pause_bot ? 'Paused' : 'Active'}
-                                        </span>
-                                    </td>
-                                    <td className="p-3 font-mono text-xs text-gray-600">
-                                        {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-                                    </td>
-                                </tr>
+                                <UserRow
+                                    key={user.id || i}
+                                    user={user}
+                                    selected={selectedUsers.includes(user.id)}
+                                    onToggle={() => toggleUser(user.id)}
+                                />
                             ))
                         ) : (
-                            <tr><td colSpan={4} className="p-4 text-center text-gray-600 italic">No users found.</td></tr>
+                            <tr><td colSpan={5} className="p-4 text-center text-gray-600 italic">No users found.</td></tr>
                         )}
                     </tbody>
                 </table>
             </div>
         </div>
+    )
+}
+
+function UserRow({ user, selected, onToggle }: { user: any; selected: boolean; onToggle: () => void }) {
+    return (
+        <tr className={`hover:bg-white/5 transition-colors ${selected ? 'bg-purple-500/10' : ''}`}>
+            <td className="p-3">
+                <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={onToggle}
+                    className="w-4 h-4 accent-green-500 cursor-pointer"
+                />
+            </td>
+            <td className="p-3 font-medium text-white">
+                <div className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] uppercase ${user.plan_type === 'pro' ? 'bg-blue-500' :
+                            user.plan_type === 'leetcode' ? 'bg-purple-500' :
+                                user.plan_type === 'enterprise' ? 'bg-amber-500' :
+                                    user.plan_type === 'owner' ? 'bg-red-500' :
+                                        'bg-gray-600'
+                        }`}>
+                        {user.github_username?.[0] || 'U'}
+                    </div>
+                    {user.github_username || 'Anonymous'}
+                </div>
+            </td>
+            <td className="p-3">
+                <span className={`px-2 py-0.5 rounded text-xs border uppercase ${user.plan_type === 'owner' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                        user.plan_type === 'enterprise' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                            user.plan_type === 'leetcode' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' :
+                                user.plan_type === 'pro' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                    'bg-gray-500/10 text-gray-500 border-gray-500/20'
+                    }`}>
+                    {user.plan_type || 'Free'}
+                </span>
+            </td>
+            <td className="p-3">
+                <span className={`flex items-center gap-1 ${user.pause_bot ? 'text-gray-500' : 'text-green-500'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${user.pause_bot ? 'bg-gray-500' : 'bg-green-500 animate-pulse'}`} />
+                    {user.pause_bot ? 'Paused' : 'Active'}
+                </span>
+            </td>
+            <td className="p-3 font-mono text-xs text-gray-600">
+                {user.last_commit_ts ? new Date(user.last_commit_ts).toLocaleDateString() : 'Never'}
+            </td>
+        </tr>
     )
 }

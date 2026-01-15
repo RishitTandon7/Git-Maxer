@@ -14,7 +14,7 @@ function getServiceClient() {
 // Manual contribution trigger for a specific user and date
 export async function POST(request: Request) {
     try {
-        const { userId, username, date } = await request.json()
+        const { userId, username, date, backfillDays } = await request.json()
 
         if (!userId || !username) {
             return NextResponse.json({ error: 'Missing userId or username' }, { status: 400 })
@@ -48,50 +48,75 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: `Repository ${fullRepo} not found` }, { status: 404 })
         }
 
-        // Create contribution file
-        const targetDate = date || new Date().toISOString().split('T')[0]
-        const content = `# Manual Contribution
+        let commitsCreated = 0
+        const days = backfillDays || 1
+
+        // Create contributions for each day
+        for (let i = days - 1; i >= 0; i--) {
+            const targetDateObj = new Date()
+            targetDateObj.setDate(targetDateObj.getDate() - i)
+            const targetDate = date && i === 0 ? date : targetDateObj.toISOString().split('T')[0]
+
+            const content = `# ${backfillDays ? 'Backfill' : 'Manual'} Contribution
 # Date: ${targetDate}
 # User: ${username}
 # Triggered by: Admin (God Mode)
 
 def contribution_${targetDate.replace(/-/g, '_')}():
     """
-    This contribution was manually triggered by the admin.
+    This contribution was ${backfillDays ? 'backfilled' : 'manually triggered'} by the admin.
     GitMaxer - Keep your streak alive!
     """
-    print("Manual contribution from GitMaxer Admin")
+    print("${backfillDays ? 'Backfill' : 'Manual'} contribution from GitMaxer Admin")
     return True
 
 # Generated at: ${new Date().toISOString()}
 `
 
-        const fileName = `manual/${targetDate}_${Date.now()}.py`
+            const fileName = `${backfillDays ? 'backfill' : 'manual'}/${targetDate}_${Date.now()}.py`
 
-        const createRes = await fetch(`https://api.github.com/repos/${fullRepo}/contents/${fileName}`, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify({
-                message: `feat: Manual contribution for ${targetDate}`,
-                content: Buffer.from(content).toString('base64')
-            })
-        })
+            try {
+                // Create date object for the target date (set to 8 PM for natural commit time)
+                const commitDate = new Date(targetDate)
+                commitDate.setHours(20, 0, 0, 0)
 
-        if (!createRes.ok) {
-            const err = await createRes.json()
-            return NextResponse.json({ error: err.message || 'Failed to create file' }, { status: 500 })
+                const createRes = await fetch(`https://api.github.com/repos/${fullRepo}/contents/${fileName}`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify({
+                        message: `feat: ${backfillDays ? 'Backfill' : 'Manual'} contribution for ${targetDate}`,
+                        content: Buffer.from(content).toString('base64'),
+                        committer: {
+                            name: 'GitMaxer Bot',
+                            email: 'bot@gitmaxer.com',
+                            date: commitDate.toISOString()
+                        },
+                        author: {
+                            name: username,
+                            email: `${username}@users.noreply.github.com`,
+                            date: commitDate.toISOString()
+                        }
+                    })
+                })
+
+                if (createRes.ok) {
+                    commitsCreated++
+                }
+            } catch (e) {
+                // Skip failed commits
+            }
         }
 
         // Update last_commit_ts
         await supabase.from('user_settings').update({
             last_commit_ts: new Date().toISOString(),
-            daily_commit_count: 1
+            daily_commit_count: 0
         }).eq('id', userId)
 
         return NextResponse.json({
             success: true,
-            message: `Contribution created for ${username} on ${targetDate}`,
-            file: fileName,
+            message: `Created ${commitsCreated} contribution(s) for ${username}`,
+            commitsCreated,
             repo: fullRepo
         })
 
