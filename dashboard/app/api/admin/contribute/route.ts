@@ -66,23 +66,36 @@ export async function POST(request: Request) {
             targetDateObj.setDate(targetDateObj.getDate() - i)
             const targetDate = date && i === 0 ? date : targetDateObj.toISOString().split('T')[0]
 
-            const content = `# ${backfillDays ? 'Backfill' : 'Manual'} Contribution
-# Date: ${targetDate}
-# User: ${username}
-# Triggered by: Admin (God Mode)
-
-def contribution_${targetDate.replace(/-/g, '_')}():
+            // Create a realistic looking coding challenge solution
+            const content = `class Solution:
     """
-    This contribution was ${backfillDays ? 'backfilled' : 'manually triggered'} by the admin.
-    GitMaxer - Keep your streak alive!
+    Daily coding challenge solution.
+    Problem: Optimize data processing pipeline
+    Date: ${targetDate}
     """
-    print("${backfillDays ? 'Backfill' : 'Manual'} contribution from GitMaxer Admin")
-    return True
+    def process_data(self, data: list) -> list:
+        # Optimization algorithm
+        result = []
+        seen = set()
+        
+        for item in data:
+            if item not in seen:
+                seen.add(item)
+                result.append(item)
+                
+        return sorted(result)
 
-# Generated at: ${new Date().toISOString()}
+    def validate_input(self, data):
+        return data is not None and len(data) > 0
+
+# Test cases
+if __name__ == "__main__":
+    sol = Solution()
+    print(f"Processing complete at ${targetDate}T20:00:00Z")
 `
 
-            const fileName = `${backfillDays ? 'backfill' : 'manual'}/${targetDate}_${Date.now()}.py`
+            // Use a clean, realistic path
+            const fileName = `challenges/challenge_${targetDate.replace(/-/g, '_')}.py`
 
             try {
                 // Create date object for the target date (set to 8 PM for natural commit time)
@@ -93,7 +106,7 @@ def contribution_${targetDate.replace(/-/g, '_')}():
                     method: 'PUT',
                     headers,
                     body: JSON.stringify({
-                        message: `feat: ${backfillDays ? 'Backfill' : 'Manual'} contribution for ${targetDate}`,
+                        message: `feat: Add solution for ${targetDate}`,
                         content: Buffer.from(content).toString('base64'),
                         committer: {
                             name: githubUser.name || username,
