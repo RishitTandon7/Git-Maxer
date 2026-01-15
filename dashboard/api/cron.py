@@ -129,15 +129,12 @@ class handler(BaseHTTPRequestHandler):
                         except ValueError:
                              logs.append(f"User {user['github_username']}: Invalid time format {commit_time_str}")
                     else:
-                        # Default behavior for random time: Run nicely around the default deadline (23:45)
-                        # OR if we want random distribution, we'd need a different mechanism. 
-                        # For now, let's keep the original logic: Run whenever cron hits if no time set,
-                        # BUT since cron hits every 15m, this might imply running at 00:00 every day immediately.
-                        # Default behavior: Run after 11 PM IST (23:00) OR Early morning (until 4 AM)
-                        if now_ist.hour >= 23 or now_ist.hour < 4:
+                        # No specific time set - run between 8 PM to 12 AM IST
+                        # Daily limit (daily_commit_count) will prevent duplicates
+                        if now_ist.hour >= 20 and now_ist.hour < 24:
                             should_run_now = True
                         else:
-                            logs.append(f"User {user['github_username']}: Default schedule - Sleeping until 11 PM IST")
+                            logs.append(f"User {user['github_username']}: Default schedule - Waiting for 8 PM - 12 AM IST window")
 
                     if not should_run_now:
                         continue
