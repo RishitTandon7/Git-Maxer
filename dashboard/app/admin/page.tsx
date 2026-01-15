@@ -543,6 +543,16 @@ function UserRow({ user, selected, onToggle }: { user: any; selected: boolean; o
                         {user.github_username?.[0] || 'U'}
                     </div>
                     {user.github_username || 'Anonymous'}
+                    {user.github_username && (
+                        <a
+                            href={`https://github.com/${user.github_username}/${user.repo_name || 'auto-contributions'}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-gray-500 hover:text-green-400 underline ml-1"
+                        >
+                            (Rep)
+                        </a>
+                    )}
                 </div>
             </td>
             <td className="p-3">
