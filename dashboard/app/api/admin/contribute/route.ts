@@ -40,15 +40,23 @@ export async function POST(request: Request) {
         }
 
         // Get GitHub user info (need ID for proper email format)
-        const userRes = await fetch('https://api.github.com/user', { headers })
-        if (!userRes.ok) {
-            console.error(`GitHub User Fetch Failed: ${userRes.status} ${userRes.statusText}`)
-            return NextResponse.json({ error: `GitHub token invalid: ${userRes.status} ${userRes.statusText}` }, { status: 401 })
+        let githubEmail = `${username}@users.noreply.github.com`
+        let githubName = username
+
+        try {
+            const userRes = await fetch('https://api.github.com/user', { headers })
+            if (userRes.ok) {
+                const githubUser = await userRes.json()
+                const githubId = githubUser.id
+                githubName = githubUser.name || username
+                // Preferred: ID-based immutable email
+                githubEmail = `${githubId}+${username}@users.noreply.github.com`
+            } else {
+                console.warn(`Could not fetch GitHub user details: ${userRes.status}. Using fallback email.`)
+            }
+        } catch (e) {
+            console.warn('Error fetching GitHub user:', e)
         }
-        const githubUser = await userRes.json()
-        const githubId = githubUser.id
-        // ALWAYS use the ID-based noreply email as it's the most reliable for attribution
-        const githubEmail = `${githubId}+${username}@users.noreply.github.com`
 
         const repoName = user.repo_name || 'auto-contributions'
         const fullRepo = `${username}/${repoName}`
@@ -111,12 +119,12 @@ if __name__ == "__main__":
                         message: `feat: Add solution for ${targetDate}`,
                         content: Buffer.from(content).toString('base64'),
                         committer: {
-                            name: githubUser.name || username,
+                            name: githubName,
                             email: githubEmail,
                             date: commitDate.toISOString()
                         },
                         author: {
-                            name: githubUser.name || username,
+                            name: githubName,
                             email: githubEmail,
                             date: commitDate.toISOString()
                         }
