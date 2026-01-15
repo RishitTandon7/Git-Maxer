@@ -42,7 +42,8 @@ export async function POST(request: Request) {
         // Get GitHub user info (need ID for proper email format)
         const userRes = await fetch('https://api.github.com/user', { headers })
         if (!userRes.ok) {
-            return NextResponse.json({ error: 'GitHub token invalid' }, { status: 401 })
+            console.error(`GitHub User Fetch Failed: ${userRes.status} ${userRes.statusText}`)
+            return NextResponse.json({ error: `GitHub token invalid: ${userRes.status} ${userRes.statusText}` }, { status: 401 })
         }
         const githubUser = await userRes.json()
         const githubId = githubUser.id
