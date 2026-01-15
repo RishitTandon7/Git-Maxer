@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "./providers/AuthProvider";
+import { Providers } from "./providers/Providers";
 import { CacheBuster } from "./components/CacheBuster";
 
 const geistSans = Geist({
@@ -31,10 +31,11 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <CacheBuster />
-        <AuthProvider>
+        <Providers>
           {children}
-        </AuthProvider>
+        </Providers>
       </body>
     </html>
   );
 }
+

@@ -122,6 +122,7 @@ export async function GET(request: Request) {
                         const { error: insertError } = await serviceClient
                             .from('user_settings')
                             .upsert({
+                                id: userId,
                                 user_id: userId,
                                 github_access_token: providerToken,
                                 github_username: githubUsername || '',
@@ -130,7 +131,7 @@ export async function GET(request: Request) {
                                 preferred_language: 'any',
                                 min_contributions: 1,
                                 pause_bot: true
-                            }, { onConflict: 'user_id' })
+                            }, { onConflict: 'id' })
 
                         if (insertError) {
                             console.error('Error creating user settings:', insertError)

@@ -83,3 +83,96 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #484f58;
 }
+
+/* Logo tap hint animation - Finger pointing */
+@keyframes tap-hint {
+
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: translateY(-5px) scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes finger-point {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-15deg);
+  }
+
+  50% {
+    transform: translateY(5px) rotate(-15deg);
+  }
+}
+
+.animate-tap-hint {
+  animation: tap-hint 1.5s ease-in-out infinite;
+}
+
+.animate-finger-point {
+  animation: finger-point 1s ease-in-out infinite;
+}
+
+/* Dropdown menu animation */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.dropdown-enter {
+  animation: slideDown 0.2s ease-out forwards;
+}
+
+.dropdown-exit {
+  animation: slideUp 0.15s ease-in forwards;
+}
+
+/* Pulse glow effect for logo hint */
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Tutorial highlight effect */
+.tutorial-highlight {
+  position: relative !important;
+  z-index: 10000 !important;
+  pointer-events: auto !important;
+  isolation: isolate;
+}

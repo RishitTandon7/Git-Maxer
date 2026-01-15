@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { motion } from 'framer-motion'
-import { Github, Mail } from 'lucide-react'
+import { Github, Mail, BookOpen, Users, FolderGit2, ChevronDown, X, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from './providers/AuthProvider'
 import { OwnerStats } from './dashboard/OwnerStats'
+import { useTutorial } from './components/TutorialOverlay'
 
 type Theme = {
   headingGradient: string
@@ -28,6 +29,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState<'github' | 'google' | null>(null)
   const [showSocial, setShowSocial] = useState(false)
   const { user: sessionUser, userPlan, loading: authLoading } = useAuth()
+
+  // New states for logo dropdown and modals
+  const [showLogoDropdown, setShowLogoDropdown] = useState(false)
+  const [activeModal, setActiveModal] = useState<'tutorial' | 'about' | 'projects' | null>(null)
+  const [showTapHint, setShowTapHint] = useState(true)
+
+  // Interactive tutorial
+  const { startTutorial } = useTutorial()
 
   const getTheme = (plan: string | null): Theme => {
     switch (plan) {
@@ -171,6 +180,7 @@ export default function LoginPage() {
           if (effectivePlan === 'enterprise') return <GoldenTheme />
           if (effectivePlan === 'owner') return <RoyalTheme />
           if (effectivePlan === 'pro') return <HyperTechTheme />
+          if (effectivePlan === 'leetcode') return <LeetCodeTheme />
           return (
             <>
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-800/20 via-[#050505] to-[#050505]" />
@@ -181,33 +191,187 @@ export default function LoginPage() {
       </div>
 
       {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 px-6 py-6">
+      <nav className="fixed top-0 w-full z-50 px-4 sm:px-6 py-4 sm:py-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className={`flex items-center gap-3 backdrop-blur-md bg-white/5 border border-white/10 px-4 py-2 rounded-full ${userPlan === 'pro' ? 'shadow-[0_0_20px_rgba(6,182,212,0.3)] border-cyan-500/30' : ''}`}
-          >
-            <div className="w-8 h-8 relative rounded-full overflow-hidden border border-white/10">
-              <img src="/logo.jpg" alt="GitMaxer" className="object-cover w-full h-full" />
-            </div>
-            <span className={`font-bold text-lg tracking-tight bg-gradient-to-r ${theme.logoText} bg-clip-text text-transparent`}>GitMaxer</span>
-          </motion.div>
+          {/* Logo with Dropdown (Mobile: clickable, Desktop: shows links) */}
+          <div className="relative">
+            <motion.button
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              onClick={() => {
+                setShowLogoDropdown(!showLogoDropdown)
+                setShowTapHint(false)
+              }}
+              data-tutorial="logo"
+              className={`flex items-center gap-2 sm:gap-3 backdrop-blur-md bg-white/5 border border-white/10 px-3 sm:px-4 py-2 rounded-full cursor-pointer hover:bg-white/10 transition-all ${userPlan === 'pro' ? 'shadow-[0_0_20px_rgba(6,182,212,0.3)] border-cyan-500/30' : ''} ${showTapHint ? 'animate-pulse-glow' : ''}`}
+            >
+              <div className="w-7 h-7 sm:w-8 sm:h-8 relative rounded-full overflow-hidden border border-white/10">
+                <img src="/logo.jpg" alt="GitMaxer" className="object-cover w-full h-full" />
+              </div>
+              <span className={`font-bold text-base sm:text-lg tracking-tight bg-gradient-to-r ${theme.logoText} bg-clip-text text-transparent`}>GitMaxer</span>
+              <ChevronDown
+                size={16}
+                className={`text-gray-400 transition-transform duration-200 sm:hidden ${showLogoDropdown ? 'rotate-180' : ''}`}
+              />
+            </motion.button>
 
+            {/* Tap Hint Animation - Mobile Only */}
+            {showTapHint && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0 }}
+                className="absolute -right-3 -bottom-3 sm:hidden pointer-events-none"
+              >
+                <div className="relative">
+                  <span className="text-2xl animate-finger-point inline-block">👆</span>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 1, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="absolute -top-8 -right-2 bg-white/90 text-black text-[10px] px-2 py-1 rounded-full whitespace-nowrap font-medium shadow-lg"
+                  >
+                    Tap me!
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Dropdown Menu */}
+            {showLogoDropdown && (
+              <>
+                {/* Backdrop to close dropdown */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowLogoDropdown(false)}
+                />
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 top-full mt-2 w-64 backdrop-blur-xl bg-black/80 border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50"
+                >
+                  <div className="p-2">
+                    {/* Tutorial */}
+                    <button
+                      onClick={() => {
+                        setActiveModal('tutorial')
+                        setShowLogoDropdown(false)
+                      }}
+                      data-tutorial="tutorial-link"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <BookOpen size={20} className="text-white" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-white font-semibold text-sm">Tutorial</p>
+                        <p className="text-gray-400 text-xs">Learn how to use GitMaxer</p>
+                      </div>
+                    </button>
+
+                    {/* Community */}
+                    <a
+                      href="https://chat.whatsapp.com/LDdiCn2GGf9EI4KvlZ5e4i"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setShowLogoDropdown(false)}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/20">
+                        <span className="text-xl">💬</span>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-white font-semibold text-sm">Community</p>
+                        <p className="text-gray-400 text-xs">Join our WhatsApp group</p>
+                      </div>
+                    </a>                    {/* About Us */}
+                    <button
+                      onClick={() => {
+                        setActiveModal('about')
+                        setShowLogoDropdown(false)
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                        <Users size={20} className="text-white" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-white font-semibold text-sm">About Us</p>
+                        <p className="text-gray-400 text-xs">Meet the creator</p>
+                      </div>
+                    </button>
+
+                    {/* Other Projects */}
+                    <button
+                      onClick={() => {
+                        setActiveModal('projects')
+                        setShowLogoDropdown(false)
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                        <FolderGit2 size={20} className="text-white" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-white font-semibold text-sm">Other Projects</p>
+                        <p className="text-gray-400 text-xs">More by Rishit Tandon</p>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="border-t border-white/10 p-3 bg-white/5">
+                    <p className="text-[10px] text-gray-500 text-center">
+                      Made with 💚 by Rishit Tandon
+                    </p>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </div>
+
+          {/* Desktop Navigation Links */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-6 text-sm font-medium"
+            className="flex items-center gap-4 sm:gap-6 text-sm font-medium"
           >
-            <Link href="/pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</Link>
+            {/* Desktop-only links */}
+            <div className="hidden md:flex items-center gap-5">
+              <button
+                onClick={() => setActiveModal('tutorial')}
+                className="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"
+              >
+                <BookOpen size={16} />
+                <span>Tutorial</span>
+              </button>
+              <button
+                onClick={() => setActiveModal('about')}
+                className="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"
+              >
+                <Users size={16} />
+                <span>About</span>
+              </button>
+              <button
+                onClick={() => setActiveModal('projects')}
+                className="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"
+              >
+                <FolderGit2 size={16} />
+                <span>Projects</span>
+              </button>
+            </div>
+
+            <Link href="/pricing" data-tutorial="pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</Link>
             {sessionUser ? (
-              <Link href="/dashboard" className={`px-5 py-2 rounded-full font-bold transition-all shadow-lg border ${theme.navbarButton}`}>
+              <Link href="/dashboard" className={`px-4 sm:px-5 py-2 rounded-full font-bold transition-all shadow-lg border text-xs sm:text-sm ${theme.navbarButton}`}>
                 Dashboard
               </Link>
             ) : (
-              <Link href="/pricing" className={`px-5 py-2 rounded-full font-bold transition-all shadow-lg border ${theme.navbarButton}`}>
-                Get Pro
-              </Link>
+              <button onClick={() => setActiveModal('tutorial')} className={`px-4 sm:px-5 py-2 rounded-full font-bold transition-all shadow-lg border text-xs sm:text-sm ${theme.navbarButton}`}>
+                Tutorial
+              </button>
             )}
           </motion.div>
         </div>
@@ -329,10 +493,11 @@ export default function LoginPage() {
                 <button
                   onClick={() => handleLogin('github')}
                   disabled={!!loading}
+                  data-tutorial="signup-github"
                   className={`h-14 px-8 rounded-full font-bold text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 w-full sm:w-auto justify-center ${theme.buttonPrimary}`}
                 >
                   <Github size={20} />
-                  <span>Continue with GitHub</span>
+                  <span>Sign up with GitHub</span>
                 </button>
                 <button
                   onClick={() => handleLogin('google')}
@@ -340,7 +505,7 @@ export default function LoginPage() {
                   className={`h-14 px-8 rounded-full font-medium text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 w-full sm:w-auto justify-center backdrop-blur-sm ${theme.buttonSecondary}`}
                 >
                   <Mail size={20} />
-                  <span>Google</span>
+                  <span>Login with Google</span>
                 </button>
               </>
             )}
@@ -358,6 +523,393 @@ export default function LoginPage() {
           </button>
         </p>
       </footer>
+
+      {/* Tutorial Modal */}
+      {activeModal === 'tutorial' && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={() => setActiveModal(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-3xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-gray-900/95 backdrop-blur-xl border-b border-white/10 p-6 flex items-center justify-between z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                  <BookOpen size={24} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">How to Use GitMaxer</h2>
+                  <p className="text-sm text-gray-400">Quick start guide</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveModal(null)}
+                className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all"
+              >
+                <X size={20} className="text-gray-400" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Start Interactive Tour Button */}
+              <button
+                onClick={() => {
+                  setActiveModal(null)
+                  setTimeout(() => startTutorial(), 300)
+                }}
+                className="w-full py-4 px-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-lg rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 shadow-lg shadow-cyan-500/30"
+              >
+                <span className="text-2xl">🚀</span>
+                <span>Start Interactive Tour</span>
+              </button>
+
+              <div className="relative flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/10"></div>
+                </div>
+                <div className="relative bg-gray-900 px-4 text-sm text-gray-500">or read the guide below</div>
+              </div>
+
+              {/* Important Notice */}
+              <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 rounded-2xl p-4">
+                <p className="text-sm text-red-300 text-center font-medium">
+                  ⚠️ You MUST sign up with GitHub first. Google login is only for returning users!
+                </p>
+              </div>
+
+              {/* Step 1 */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold shadow-lg shadow-green-500/20">
+                  1
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-2">Sign up with GitHub (Required)</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    Click <span className="text-white font-semibold">"Sign up with GitHub"</span> to create your account. This is mandatory because we need access to your GitHub repositories to create commits on your behalf.
+                  </p>
+                  <p className="text-gray-500 text-xs mt-2 italic">
+                    💡 Google login is only for users who have already signed up with GitHub.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20">
+                  2
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-2">Complete Your Setup</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    After signing in, you'll be taken to the setup page where you can:
+                  </p>
+                  <ul className="mt-2 space-y-1 text-sm text-gray-400">
+                    <li>• Choose your contribution repository (new or existing)</li>
+                    <li>• Set your preferred commit time (we recommend matching your timezone)</li>
+                    <li>• Customize commit messages (Pro feature)</li>
+                    <li>• Select contribution intensity (1-5 commits/day)</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/20">
+                  3
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-2">Sit Back & Watch the Magic</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    Once configured, GitMaxer runs automatically every day at your chosen time. You'll see your contribution graph fill up with beautiful green squares! 🟩🟩🟩
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 4 - Dashboard */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-white font-bold shadow-lg shadow-amber-500/20">
+                  4
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-white mb-2">Monitor Your Dashboard</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    Visit your dashboard anytime to see your streak status, recent commits, and settings. You can pause, resume, or modify your contribution schedule at any time.
+                  </p>
+                </div>
+              </div>
+
+              {/* Pro Tips */}
+              <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl p-5 mt-8">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles size={18} className="text-amber-400" />
+                  <h4 className="text-amber-400 font-semibold">Pro Tips</h4>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Use a <strong>private repository</strong> if you want to keep your automated commits hidden from others</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Set contribution time to match your <strong>timezone</strong> for natural-looking activity patterns</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Upgrade to <strong>Pro</strong> for custom commit messages, LeetCode integration, and priority support!</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-1">✓</span>
+                    <span>Your streak data syncs in real-time with GitHub - no delays!</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* About Us Modal */}
+      {activeModal === 'about' && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={() => setActiveModal(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="w-full max-w-lg bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header with gradient */}
+            <div className="relative h-32 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-500">
+              <div className="absolute inset-0 bg-black/20" />
+              <button
+                onClick={() => setActiveModal(null)}
+                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center transition-all backdrop-blur-sm"
+              >
+                <X size={20} className="text-white" />
+              </button>
+            </div>
+
+            {/* Profile */}
+            <div className="relative px-6 pb-6">
+              <div className="absolute -top-12 left-6">
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-gray-900 shadow-xl overflow-hidden">
+                  <img src="/logo.jpg" alt="Rishit Tandon" className="w-full h-full object-cover" />
+                </div>
+              </div>
+
+              <div className="pt-14">
+                <h2 className="text-2xl font-bold text-white">Rishit Tandon</h2>
+                <p className="text-gray-400 text-sm">Creator & Developer</p>
+
+                <p className="mt-4 text-gray-300 text-sm leading-relaxed">
+                  Hey! I'm Rishit, a passionate developer who loves building tools that make developers' lives easier.
+                  GitMaxer was born out of a simple idea: why should your contribution streak die just because you took a break?
+                </p>
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <a
+                    href="https://github.com/rishittandon7"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm text-white transition-all"
+                  >
+                    <Github size={16} />
+                    <span>GitHub</span>
+                  </a>
+                  <a
+                    href="https://instagram.com/kingrishit2.0"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 border border-pink-500/30 rounded-full text-sm text-white transition-all"
+                  >
+                    <span>📸</span>
+                    <span>@kingrishit2.0</span>
+                  </a>
+                  <a
+                    href="mailto:rishittandon7@gmail.com"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-sm text-white transition-all"
+                  >
+                    <Mail size={16} />
+                    <span>Email</span>
+                  </a>
+                </div>
+
+                <div className="mt-6 p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-xl">
+                  <p className="text-sm text-green-300 text-center">
+                    💚 Thank you for using GitMaxer! Your support means everything.
+                  </p>
+                </div>
+
+                {/* GitMaxer Community */}
+                <a
+                  href="https://chat.whatsapp.com/LDdiCn2GGf9EI4KvlZ5e4i"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 w-full flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 border border-green-500/30 rounded-xl transition-all group"
+                >
+                  <span className="text-2xl">💬</span>
+                  <div className="text-left">
+                    <p className="text-white font-semibold text-sm group-hover:text-green-300 transition-colors">Join GitMaxer Community</p>
+                    <p className="text-gray-400 text-xs">Connect with other users & get support</p>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Other Projects Modal */}
+      {activeModal === 'projects' && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={() => setActiveModal(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-3xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-gray-900/95 backdrop-blur-xl border-b border-white/10 p-6 flex items-center justify-between z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                  <FolderGit2 size={24} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Other Projects</h2>
+                  <p className="text-sm text-gray-400">More by Rishit Tandon</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveModal(null)}
+                className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all"
+              >
+                <X size={20} className="text-gray-400" />
+              </button>
+            </div>
+
+            {/* Projects Grid */}
+            <div className="p-6 grid gap-4">
+              {/* Project 1 - LinkedOut Pro */}
+              <a
+                href="https://linkedout-pro.netlify.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group p-5 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-2xl hover:border-blue-500/40 transition-all"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-blue-300 transition-colors">
+                      LinkedOut Pro
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Professional LinkedIn profile optimization and networking tool
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                    <span className="text-2xl">💼</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full">LinkedIn</span>
+                  <span className="px-2 py-1 bg-cyan-500/20 text-cyan-300 text-xs rounded-full">Networking</span>
+                  <span className="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-full">Live ✓</span>
+                </div>
+              </a>
+
+              {/* Project 2 - GeoTag Pro */}
+              <a
+                href="https://regal-puppy-f9382d.netlify.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group p-5 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-2xl hover:border-green-500/40 transition-all"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-green-300 transition-colors">
+                      GeoTag Pro
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Advanced geolocation tagging and mapping solution
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
+                    <span className="text-2xl">📍</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <span className="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-full">Maps</span>
+                  <span className="px-2 py-1 bg-emerald-500/20 text-emerald-300 text-xs rounded-full">Location</span>
+                  <span className="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-full">Live ✓</span>
+                </div>
+              </a>
+
+              {/* Project 3 - GitMaxer */}
+              <a
+                href="https://git-maxer.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group p-5 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl hover:border-purple-500/40 transition-all"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white group-hover:text-purple-300 transition-colors">
+                      GitMaxer (This App!)
+                    </h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Keep your GitHub contribution streak alive forever with AI automation
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                    <span className="text-2xl">🟩</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded-full">GitHub</span>
+                  <span className="px-2 py-1 bg-pink-500/20 text-pink-300 text-xs rounded-full">Automation</span>
+                  <span className="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-full">Live ✓</span>
+                </div>
+              </a>
+
+              {/* View More on GitHub */}
+              <a
+                href="https://github.com/rishittandon7?tab=repositories"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all text-white font-medium"
+              >
+                <Github size={18} />
+                <span>View all projects on GitHub</span>
+              </a>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   )
 }
@@ -477,3 +1029,43 @@ function HyperTechTheme() {
     </div>
   )
 }
+
+function LeetCodeTheme() {
+  return (
+    <div className="absolute inset-0 bg-[#050505] overflow-hidden">
+      {/* Subtle purple gradient at top */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-600/15 via-[#050505] to-[#050505]" />
+
+      {/* Purple floating particles */}
+      {[...Array(150)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full"
+          initial={{
+            opacity: 0,
+            scale: Math.random() * 0.5 + 0.5
+          }}
+          animate={{
+            y: [Math.random() * 800, Math.random() * -200],
+            opacity: [0, Math.random() * 0.8 + 0.3, 0],
+          }}
+          transition={{
+            duration: Math.random() * 6 + 4,
+            repeat: Infinity,
+            delay: Math.random() * 3,
+            ease: "linear"
+          }}
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            width: Math.random() * 5 + 3 + 'px',
+            height: Math.random() * 5 + 3 + 'px',
+            backgroundColor: '#a855f7',
+            boxShadow: '0 0 12px rgba(168, 85, 247, 0.8)'
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+

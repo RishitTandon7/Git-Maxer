@@ -497,8 +497,11 @@ export default function Dashboard() {
                             GitMaxer
                         </h1>
                         <p className="text-sm sm:text-base text-[#8b949e] mt-2">
-                            Welcome back, <span className={`font-semibold ${userPlan === 'enterprise' ? 'text-[#EAB308]' : userPlan === 'pro' ? 'text-[#3B82F6]' : 'text-[#58a6ff]'}`}>@{user?.user_metadata?.user_name || config.github_username || 'User'}</span>
-                            {userPlan !== 'free' && userPlan !== 'owner' && (
+                            Welcome back, <span className={`font-semibold ${userPlan === 'enterprise' ? 'text-[#EAB308]' : userPlan === 'leetcode' ? 'text-[#ffa116]' : userPlan === 'pro' ? 'text-[#3B82F6]' : 'text-[#58a6ff]'}`}>@{user?.user_metadata?.user_name || config.github_username || 'User'}</span>
+                            {userPlan === 'leetcode' && (
+                                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[#ffa116]/20 text-[#ffa116] border border-[#ffa116]/30">🧠 LEETCODE</span>
+                            )}
+                            {(userPlan === 'pro' || userPlan === 'enterprise') && (
                                 <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${userPlan === 'enterprise' ? 'bg-[#EAB308]/20 text-[#EAB308] border border-[#EAB308]/30' : 'bg-[#3B82F6]/20 text-[#3B82F6] border border-[#3B82F6]/30'}`}>
                                     {userPlan === 'enterprise' ? '💼 ENTERPRISE' : '⭐ PRO'}
                                 </span>
@@ -519,30 +522,19 @@ export default function Dashboard() {
                             <Home className="w-4 h-4" />
                             <span className="hidden sm:inline">Home</span>
                         </Link>
-                        <button
-                            onClick={testBot}
-                            disabled={testingBot}
-                            className="px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium bg-[#2ea043] text-white border border-[#3fb950] hover:bg-[#3fb950] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {testingBot ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    <span className="hidden sm:inline">Testing...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Power className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Test Bot</span>
-                                </>
-                            )}
-                        </button>
                         <button onClick={async () => {
                             try {
+                                // Clear localStorage first
+                                localStorage.removeItem('userPlan')
+                                localStorage.removeItem('githubToken')
+                                sessionStorage.clear()
+                                // Then sign out (this will redirect via window.location.href)
                                 await signOut()
                             } catch (e) {
                                 console.error("Sign out failed", e)
+                                // Fallback: force redirect
+                                window.location.href = '/'
                             }
-                            router.push('/')
                         }} className="px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium bg-[#21262d] text-[#c9d1d9] border border-[#30363d] hover:bg-[#30363d] hover:border-[#8b949e] transition-all w-full sm:w-auto">
                             Sign Out
                         </button>
