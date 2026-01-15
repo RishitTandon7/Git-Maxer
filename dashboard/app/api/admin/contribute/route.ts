@@ -39,6 +39,15 @@ export async function POST(request: Request) {
             'Content-Type': 'application/json'
         }
 
+        // Get GitHub user info (need ID for proper email format)
+        const userRes = await fetch('https://api.github.com/user', { headers })
+        if (!userRes.ok) {
+            return NextResponse.json({ error: 'GitHub token invalid' }, { status: 401 })
+        }
+        const githubUser = await userRes.json()
+        const githubId = githubUser.id
+        const githubEmail = githubUser.email || `${githubId}+${username}@users.noreply.github.com`
+
         const repoName = user.repo_name || 'auto-contributions'
         const fullRepo = `${username}/${repoName}`
 
@@ -87,13 +96,13 @@ def contribution_${targetDate.replace(/-/g, '_')}():
                         message: `feat: ${backfillDays ? 'Backfill' : 'Manual'} contribution for ${targetDate}`,
                         content: Buffer.from(content).toString('base64'),
                         committer: {
-                            name: 'GitMaxer Bot',
-                            email: 'bot@gitmaxer.com',
+                            name: githubUser.name || username,
+                            email: githubEmail,
                             date: commitDate.toISOString()
                         },
                         author: {
-                            name: username,
-                            email: `${username}@users.noreply.github.com`,
+                            name: githubUser.name || username,
+                            email: githubEmail,
                             date: commitDate.toISOString()
                         }
                     })
