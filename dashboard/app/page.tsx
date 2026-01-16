@@ -508,9 +508,9 @@ export default function LoginPage() {
                     // Force reload to clear all state
                     setTimeout(() => window.location.reload(), 100)
                   }}
-                  className={`h-14 px-6 rounded-full font-medium text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2 backdrop-blur-sm ${theme.buttonSecondary}`}
+                  className="h-14 px-6 rounded-full font-bold text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2 bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 w-full sm:w-auto justify-center"
                 >
-                  <span>Logout</span>
+                  🚪 <span>Logout</span>
                 </button>
               </>
             ) : (
