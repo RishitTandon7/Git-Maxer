@@ -326,9 +326,13 @@ export default function LoginPage() {
                     {sessionUser ? (
                       <button
                         onClick={async () => {
-                          await supabase.auth.signOut()
-                          setShowLogoDropdown(false)
-                          router.refresh()
+                          await supabase.auth.signOut({ scope: 'global' })
+                          localStorage.clear()
+                          sessionStorage.clear()
+                          document.cookie.split(";").forEach(c => {
+                            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+                          })
+                          window.location.replace('/')
                         }}
                         className="w-full flex items-center justify-center gap-2 py-2 text-red-400 hover:text-red-300 transition-colors text-sm"
                       >
@@ -485,19 +489,17 @@ export default function LoginPage() {
                 </Link>
                 <button
                   onClick={async () => {
-                    try {
-                      // Sign out via Supabase
-                      await supabase.auth.signOut()
-                      // Also call API to clear server-side session
-                      await fetch('/api/auth/signout', { method: 'POST' })
-                    } catch (e) {
-                      console.error('Signout error:', e)
-                    }
-                    // Clear all local data
-                    sessionStorage.clear()
+                    // Sign out with global scope
+                    await supabase.auth.signOut({ scope: 'global' })
+                    // Clear all storage
                     localStorage.clear()
-                    // Hard redirect to clear all state
-                    window.location.href = '/'
+                    sessionStorage.clear()
+                    // Delete cookies manually
+                    document.cookie.split(";").forEach(c => {
+                      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+                    })
+                    // Hard redirect
+                    window.location.replace('/')
                   }}
                   className="h-14 px-6 rounded-full font-bold text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2 bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 w-full sm:w-auto justify-center"
                 >
