@@ -526,14 +526,7 @@ export default function LoginPage() {
                   <Github size={20} />
                   <span>Sign up with GitHub</span>
                 </button>
-                <button
-                  onClick={() => handleLogin('google')}
-                  disabled={!!loading}
-                  className={`h-14 px-8 rounded-full font-medium text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 w-full sm:w-auto justify-center backdrop-blur-sm ${theme.buttonSecondary}`}
-                >
-                  <Mail size={20} />
-                  <span>Login with Google</span>
-                </button>
+                {/* Google Login Removed */}
               </>
             )}
           </motion.div>
