@@ -485,16 +485,19 @@ export default function LoginPage() {
                 </Link>
                 <button
                   onClick={async () => {
-                    await supabase.auth.signOut()
-                    // Clear all session data
-                    if (typeof window !== 'undefined') {
-                      sessionStorage.clear()
-                      localStorage.removeItem('userPlan')
+                    try {
+                      // Sign out via Supabase
+                      await supabase.auth.signOut()
+                      // Also call API to clear server-side session
+                      await fetch('/api/auth/signout', { method: 'POST' })
+                    } catch (e) {
+                      console.error('Signout error:', e)
                     }
-                    // Use replace to prevent back button from returning to dashboard
-                    router.replace('/')
-                    // Force reload to clear all state
-                    setTimeout(() => window.location.reload(), 100)
+                    // Clear all local data
+                    sessionStorage.clear()
+                    localStorage.clear()
+                    // Hard redirect to clear all state
+                    window.location.href = '/'
                   }}
                   className="h-14 px-6 rounded-full font-bold text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2 bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 w-full sm:w-auto justify-center"
                 >

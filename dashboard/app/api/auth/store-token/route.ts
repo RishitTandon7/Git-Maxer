@@ -28,6 +28,8 @@ export async function POST(request: Request) {
             .eq('id', userId)
             .single()
 
+        let isNewUser = false
+
         if (existing) {
             // Update existing user
             await supabase
@@ -40,6 +42,7 @@ export async function POST(request: Request) {
                 .eq('id', userId)
         } else {
             // Create new user
+            isNewUser = true
             await supabase
                 .from('user_settings')
                 .upsert({
@@ -55,7 +58,7 @@ export async function POST(request: Request) {
                 }, { onConflict: 'id' })
         }
 
-        return NextResponse.json({ success: true })
+        return NextResponse.json({ success: true, isNewUser })
     } catch (error: any) {
         console.error('Store token error:', error)
         return NextResponse.json({ error: error.message }, { status: 500 })

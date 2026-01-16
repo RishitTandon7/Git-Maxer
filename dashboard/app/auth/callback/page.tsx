@@ -28,12 +28,13 @@ export default function AuthCallbackPage() {
                     if (session) {
                         setStatus('Session established! Redirecting...')
 
-                        // Store the provider token if available
+                        // Store the provider token and check if new user
                         const providerToken = session.provider_token
+                        let isNewUser = false
+
                         if (providerToken && session.user) {
-                            // Call API to store the token
                             try {
-                                await fetch('/api/auth/store-token', {
+                                const res = await fetch('/api/auth/store-token', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
@@ -42,22 +43,18 @@ export default function AuthCallbackPage() {
                                         username: session.user.user_metadata?.user_name
                                     })
                                 })
+                                const data = await res.json()
+                                isNewUser = data.isNewUser
                             } catch (e) {
                                 console.error('Failed to store token:', e)
                             }
                         }
 
-                        // Check if user has settings
-                        const { data: settings } = await supabase
-                            .from('user_settings')
-                            .select('id')
-                            .eq('id', session.user.id)
-                            .single()
-
-                        if (settings) {
-                            router.push('/dashboard')
-                        } else {
+                        // Redirect based on whether user is new
+                        if (isNewUser) {
                             router.push('/setup')
+                        } else {
+                            router.push('/dashboard')
                         }
                         return
                     }
@@ -82,11 +79,13 @@ export default function AuthCallbackPage() {
                     if (session) {
                         setStatus('Session established! Redirecting...')
 
-                        // Store the provider token if available
+                        // Store the provider token and check if new user
                         const providerToken = session.provider_token
+                        let isNewUser = false
+
                         if (providerToken && session.user) {
                             try {
-                                await fetch('/api/auth/store-token', {
+                                const res = await fetch('/api/auth/store-token', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
@@ -95,22 +94,18 @@ export default function AuthCallbackPage() {
                                         username: session.user.user_metadata?.user_name
                                     })
                                 })
+                                const data = await res.json()
+                                isNewUser = data.isNewUser
                             } catch (e) {
                                 console.error('Failed to store token:', e)
                             }
                         }
 
-                        // Check if user has settings
-                        const { data: settings } = await supabase
-                            .from('user_settings')
-                            .select('id')
-                            .eq('id', session.user.id)
-                            .single()
-
-                        if (settings) {
-                            router.push('/dashboard')
-                        } else {
+                        // Redirect based on whether user is new
+                        if (isNewUser) {
                             router.push('/setup')
+                        } else {
+                            router.push('/dashboard')
                         }
                         return
                     }

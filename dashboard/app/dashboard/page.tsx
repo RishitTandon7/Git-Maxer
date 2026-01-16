@@ -411,22 +411,30 @@ export default function Dashboard() {
         }
 
         setSaving(true)
-        const { error } = await supabase
-            .from('user_settings')
-            .update({
-                pause_bot: config.pause_bot,
-                preferred_language: config.preferred_language,
-                commit_time: config.commit_time,
-                repo_name: config.repo_name,
-                repo_visibility: config.repo_visibility
+        try {
+            const res = await fetch('/api/save-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: user.id,
+                    pause_bot: config.pause_bot,
+                    preferred_language: config.preferred_language,
+                    commit_time: config.commit_time,
+                    repo_name: config.repo_name,
+                    repo_visibility: config.repo_visibility,
+                    github_username: config.github_username
+                })
             })
-            .eq('id', user.id)
+            const data = await res.json()
 
-        if (error) {
+            if (data.error) {
+                showToast('error', `Failed to save: ${data.error}`)
+            } else {
+                setOriginalConfig(config)
+                showToast('success', 'Settings saved successfully!')
+            }
+        } catch (err: any) {
             showToast('error', 'Failed to save settings')
-        } else {
-            setOriginalConfig(config)
-            showToast('success', 'Settings saved successfully!')
         }
         setSaving(false)
     }
