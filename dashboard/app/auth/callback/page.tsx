@@ -63,13 +63,57 @@ export default function AuthCallbackPage() {
                     }
                 }
 
-                // Check for code parameter (PKCE flow - handled by route.ts)
+                // Check for code parameter (PKCE flow)
                 const params = new URLSearchParams(window.location.search)
-                if (params.get('code')) {
-                    // The route.ts handler should have caught this
-                    // If we're here, something went wrong
-                    setStatus('Processing authorization code...')
-                    return
+                const code = params.get('code')
+                if (code) {
+                    setStatus('Exchanging authorization code...')
+
+                    // Exchange code for session
+                    const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code)
+
+                    if (error) {
+                        console.error('Code exchange error:', error)
+                        setStatus(`Error: ${error.message}`)
+                        setTimeout(() => router.push('/'), 3000)
+                        return
+                    }
+
+                    if (session) {
+                        setStatus('Session established! Redirecting...')
+
+                        // Store the provider token if available
+                        const providerToken = session.provider_token
+                        if (providerToken && session.user) {
+                            try {
+                                await fetch('/api/auth/store-token', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        userId: session.user.id,
+                                        providerToken,
+                                        username: session.user.user_metadata?.user_name
+                                    })
+                                })
+                            } catch (e) {
+                                console.error('Failed to store token:', e)
+                            }
+                        }
+
+                        // Check if user has settings
+                        const { data: settings } = await supabase
+                            .from('user_settings')
+                            .select('id')
+                            .eq('id', session.user.id)
+                            .single()
+
+                        if (settings) {
+                            router.push('/dashboard')
+                        } else {
+                            router.push('/setup')
+                        }
+                        return
+                    }
                 }
 
                 // No auth params found
