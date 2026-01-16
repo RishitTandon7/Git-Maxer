@@ -332,6 +332,7 @@ function AllUsersTable({ stats }: { stats: any }) {
     const [targetDate, setTargetDate] = useState(new Date().toISOString().split('T')[0])
     const [actionLoading, setActionLoading] = useState(false)
     const [selectedLanguage, setSelectedLanguage] = useState('python')
+    const [customRepo, setCustomRepo] = useState('')
 
     const languages = [
         { value: 'python', label: '🐍 Python', ext: 'py' },
@@ -390,7 +391,13 @@ function AllUsersTable({ stats }: { stats: any }) {
                 const res = await fetch('/api/admin/contribute', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, username: user.github_username, date: targetDate, language: selectedLanguage })
+                    body: JSON.stringify({
+                        userId,
+                        username: user.github_username,
+                        date: targetDate,
+                        language: selectedLanguage,
+                        customRepo: customRepo || undefined
+                    })
                 })
                 const data = await res.json()
                 if (data.success) success++
@@ -471,6 +478,16 @@ function AllUsersTable({ stats }: { stats: any }) {
                                 <option key={lang.value} value={lang.value}>{lang.label}</option>
                             ))}
                         </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-gray-400 text-xs">Repo:</span>
+                        <input
+                            type="text"
+                            value={customRepo}
+                            onChange={(e) => setCustomRepo(e.target.value)}
+                            placeholder="auto-contributions"
+                            className="px-3 py-1.5 bg-black/50 border border-white/20 rounded-lg text-sm text-white w-40"
+                        />
                     </div>
                     <button
                         onClick={runBulkContribute}

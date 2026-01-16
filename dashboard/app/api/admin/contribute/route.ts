@@ -399,7 +399,7 @@ async function createBackdatedCommit(
 // Manual contribution trigger for a specific user and date
 export async function POST(request: Request) {
     try {
-        const { userId, username, date, backfillDays, language = 'python' } = await request.json()
+        const { userId, username, date, backfillDays, language = 'python', customRepo } = await request.json()
 
         if (!userId || !username) {
             return NextResponse.json({ error: 'Missing userId or username' }, { status: 400 })
@@ -448,7 +448,8 @@ export async function POST(request: Request) {
             console.warn('Error fetching GitHub user:', e)
         }
 
-        const repoName = user.repo_name || 'auto-contributions'
+        // Use customRepo if provided, otherwise fall back to user's saved repo or default
+        const repoName = customRepo || user.repo_name || 'auto-contributions'
         const fullRepo = `${username}/${repoName}`
 
         // Check if repo exists
