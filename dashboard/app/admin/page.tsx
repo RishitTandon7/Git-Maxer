@@ -535,6 +535,7 @@ function AllUsersTable({ stats }: { stats: any }) {
                                 />
                             </th>
                             <th className="p-3">User</th>
+                            <th className="p-3">Auth</th>
                             <th className="p-3">Plan</th>
                             <th className="p-3">Status</th>
                             <th className="p-3">Last Commit</th>
@@ -583,21 +584,37 @@ function UserRow({ user, selected, onToggle }: { user: any; selected: boolean; o
                         }`}>
                         {user.github_username?.[0] || 'U'}
                     </div>
-                    {user.github_username || 'Anonymous'}
-                    {user.github_username && (
-                        <a
-                            href={`https://github.com/${user.github_username}/${user.repo_name || 'auto-contributions'}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-gray-500 hover:text-green-400 underline ml-1"
-                        >
-                            (Rep)
-                        </a>
-                    )}
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-1">
+                            {user.github_username || 'Unknown'}
+                            {user.github_username && (
+                                <a
+                                    href={`https://github.com/${user.github_username}/${user.repo_name || 'auto-contributions'}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-gray-500 hover:text-green-400 no-underline"
+                                >
+                                    ↗
+                                </a>
+                            )}
+                        </div>
+                        <div className="text-[10px] text-gray-500">{user.email || 'No email'}</div>
+                    </div>
                 </div>
             </td>
             <td className="p-3">
-                <span className={`px-2 py-0.5 rounded text-xs border uppercase ${user.plan_type === 'owner' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                {user.provider === 'google' ? (
+                    <span className="bg-red-500/10 text-red-400 text-[10px] border border-red-500/30 px-2 py-0.5 rounded uppercase font-bold tracking-wider">
+                        Google
+                    </span>
+                ) : (
+                    <span className="bg-green-500/10 text-green-400 text-[10px] border border-green-500/30 px-2 py-0.5 rounded uppercase font-bold tracking-wider">
+                        GitHub
+                    </span>
+                )}
+            </td>
+            <td className="p-3 text-xs text-gray-400">
+                <span className={`px-2 py-1 rounded border ${user.plan_type === 'pro' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
                     user.plan_type === 'enterprise' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
                         user.plan_type === 'leetcode' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' :
                             user.plan_type === 'pro' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :

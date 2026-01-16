@@ -69,6 +69,21 @@ export async function GET() {
             .select('*')
             .order('created_at', { ascending: false })
 
+        // 9. Fetch Auth Data (to get providers)
+        const { data: { users: authUsers }, error: authError } = await supabaseAdmin.auth.admin.listUsers({
+            perPage: 1000
+        })
+
+        // Merge provider info
+        const enrichedUsers = allUsers?.map(u => {
+            const authUser = authUsers?.find(au => au.id === u.user_id || au.id === u.id)
+            return {
+                ...u,
+                provider: authUser?.app_metadata?.provider || 'unknown',
+                email: authUser?.email
+            }
+        })
+
         return NextResponse.json({
             liveUsers: activeUsers || 0,
             totalUsers: totalUsers || 0,
@@ -77,7 +92,7 @@ export async function GET() {
             totalRevenue: totalRevenue * 80, // INR conversion
             recentUsers: recentUsers || [],
             recentLogs: recentLogs || [],
-            allUsers: allUsers || []
+            allUsers: enrichedUsers || []
         })
 
     } catch (error) {
