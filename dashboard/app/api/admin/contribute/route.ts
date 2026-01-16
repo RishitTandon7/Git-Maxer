@@ -11,6 +11,109 @@ function getServiceClient() {
     })
 }
 
+// Helper function to create a backdated commit using Git Data API
+async function createBackdatedCommit(
+    headers: Record<string, string>,
+    fullRepo: string,
+    fileName: string,
+    content: string,
+    message: string,
+    authorName: string,
+    authorEmail: string,
+    targetDate: Date
+): Promise<boolean> {
+    try {
+        // 1. Get the default branch
+        const repoRes = await fetch(`https://api.github.com/repos/${fullRepo}`, { headers })
+        if (!repoRes.ok) return false
+        const repoData = await repoRes.json()
+        const defaultBranch = repoData.default_branch || 'main'
+
+        // 2. Get the latest commit SHA on the default branch
+        const refRes = await fetch(`https://api.github.com/repos/${fullRepo}/git/refs/heads/${defaultBranch}`, { headers })
+        if (!refRes.ok) return false
+        const refData = await refRes.json()
+        const latestCommitSha = refData.object.sha
+
+        // 3. Get the tree SHA from the latest commit
+        const commitRes = await fetch(`https://api.github.com/repos/${fullRepo}/git/commits/${latestCommitSha}`, { headers })
+        if (!commitRes.ok) return false
+        const commitData = await commitRes.json()
+        const baseTreeSha = commitData.tree.sha
+
+        // 4. Create a blob with the file content
+        const blobRes = await fetch(`https://api.github.com/repos/${fullRepo}/git/blobs`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                content: Buffer.from(content).toString('base64'),
+                encoding: 'base64'
+            })
+        })
+        if (!blobRes.ok) return false
+        const blobData = await blobRes.json()
+        const blobSha = blobData.sha
+
+        // 5. Create a new tree with the blob
+        const treeRes = await fetch(`https://api.github.com/repos/${fullRepo}/git/trees`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                base_tree: baseTreeSha,
+                tree: [{
+                    path: fileName,
+                    mode: '100644',
+                    type: 'blob',
+                    sha: blobSha
+                }]
+            })
+        })
+        if (!treeRes.ok) return false
+        const treeData = await treeRes.json()
+        const newTreeSha = treeData.sha
+
+        // 6. Create a commit with the custom date
+        const dateString = targetDate.toISOString()
+        const newCommitRes = await fetch(`https://api.github.com/repos/${fullRepo}/git/commits`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                message,
+                tree: newTreeSha,
+                parents: [latestCommitSha],
+                author: {
+                    name: authorName,
+                    email: authorEmail,
+                    date: dateString
+                },
+                committer: {
+                    name: authorName,
+                    email: authorEmail,
+                    date: dateString
+                }
+            })
+        })
+        if (!newCommitRes.ok) return false
+        const newCommitData = await newCommitRes.json()
+        const newCommitSha = newCommitData.sha
+
+        // 7. Update the ref to point to the new commit
+        const updateRefRes = await fetch(`https://api.github.com/repos/${fullRepo}/git/refs/heads/${defaultBranch}`, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify({
+                sha: newCommitSha,
+                force: false
+            })
+        })
+
+        return updateRefRes.ok
+    } catch (e) {
+        console.error('Error creating backdated commit:', e)
+        return false
+    }
+}
+
 // Manual contribution trigger for a specific user and date
 export async function POST(request: Request) {
     try {
@@ -33,7 +136,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'User not found or no GitHub token' }, { status: 404 })
         }
 
-        const headers = {
+        const headers: Record<string, string> = {
             'Authorization': `token ${user.github_access_token}`,
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json'
@@ -74,14 +177,14 @@ export async function POST(request: Request) {
         for (let i = days - 1; i >= 0; i--) {
             const targetDateObj = new Date()
             targetDateObj.setDate(targetDateObj.getDate() - i)
-            const targetDate = date && i === 0 ? date : targetDateObj.toISOString().split('T')[0]
+            const targetDateStr = date && i === 0 ? date : targetDateObj.toISOString().split('T')[0]
 
             // Create a realistic looking coding challenge solution
             const content = `class Solution:
     """
     Daily coding challenge solution.
     Problem: Optimize data processing pipeline
-    Date: ${targetDate}
+    Date: ${targetDateStr}
     """
     def process_data(self, data: list) -> list:
         # Optimization algorithm
@@ -101,41 +204,29 @@ export async function POST(request: Request) {
 # Test cases
 if __name__ == "__main__":
     sol = Solution()
-    print(f"Processing complete at ${targetDate}T20:00:00Z")
+    print(f"Processing complete at ${targetDateStr}T20:00:00Z")
 `
 
-            // Use a clean, realistic path
-            const fileName = `challenges/challenge_${targetDate.replace(/-/g, '_')}.py`
+            // Use a clean, realistic path with unique timestamp to avoid conflicts
+            const fileName = `challenges/challenge_${targetDateStr.replace(/-/g, '_')}_${Date.now()}.py`
 
-            try {
-                // Create date object for the target date (set to 8 PM for natural commit time)
-                const commitDate = new Date(targetDate)
-                commitDate.setHours(20, 0, 0, 0)
+            // Create date object for the target date (set to 8 PM for natural commit time)
+            const commitDate = new Date(targetDateStr)
+            commitDate.setHours(20, 0, 0, 0)
 
-                const createRes = await fetch(`https://api.github.com/repos/${fullRepo}/contents/${fileName}`, {
-                    method: 'PUT',
-                    headers,
-                    body: JSON.stringify({
-                        message: `feat: Add solution for ${targetDate}`,
-                        content: Buffer.from(content).toString('base64'),
-                        committer: {
-                            name: githubName,
-                            email: githubEmail,
-                            date: commitDate.toISOString()
-                        },
-                        author: {
-                            name: githubName,
-                            email: githubEmail,
-                            date: commitDate.toISOString()
-                        }
-                    })
-                })
+            const success = await createBackdatedCommit(
+                headers,
+                fullRepo,
+                fileName,
+                content,
+                `feat: Add solution for ${targetDateStr}`,
+                githubName,
+                githubEmail,
+                commitDate
+            )
 
-                if (createRes.ok) {
-                    commitsCreated++
-                }
-            } catch (e) {
-                // Skip failed commits
+            if (success) {
+                commitsCreated++
             }
         }
 
@@ -146,8 +237,8 @@ if __name__ == "__main__":
         }).eq('id', userId)
 
         return NextResponse.json({
-            success: true,
-            message: `Created ${commitsCreated} contribution(s) for ${username}`,
+            success: commitsCreated > 0,
+            message: `Created ${commitsCreated} backdated contribution(s) for ${username}`,
             commitsCreated,
             repo: fullRepo,
             emailUsed: githubEmail
