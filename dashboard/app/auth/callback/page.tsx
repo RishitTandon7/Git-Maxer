@@ -32,7 +32,7 @@ export default function AuthCallbackPage() {
                         const providerToken = session.provider_token
                         let isNewUser = false
 
-                        if (providerToken && session.user) {
+                        if (session.user) {
                             try {
                                 const res = await fetch('/api/auth/store-token', {
                                     method: 'POST',
@@ -40,10 +40,19 @@ export default function AuthCallbackPage() {
                                     body: JSON.stringify({
                                         userId: session.user.id,
                                         providerToken,
-                                        username: session.user.user_metadata?.user_name
+                                        username: session.user.user_metadata?.user_name,
+                                        provider: session.user.app_metadata?.provider
                                     })
                                 })
                                 const data = await res.json()
+
+                                if (!res.ok && data.rejected) {
+                                    setStatus('❌ Login Rejected: Please Sign Up with GitHub.')
+                                    await supabase.auth.signOut()
+                                    setTimeout(() => router.push('/'), 3000)
+                                    return
+                                }
+
                                 isNewUser = data.isNewUser
                             } catch (e) {
                                 console.error('Failed to store token:', e)
@@ -83,7 +92,7 @@ export default function AuthCallbackPage() {
                         const providerToken = session.provider_token
                         let isNewUser = false
 
-                        if (providerToken && session.user) {
+                        if (session.user) {
                             try {
                                 const res = await fetch('/api/auth/store-token', {
                                     method: 'POST',
@@ -91,10 +100,19 @@ export default function AuthCallbackPage() {
                                     body: JSON.stringify({
                                         userId: session.user.id,
                                         providerToken,
-                                        username: session.user.user_metadata?.user_name
+                                        username: session.user.user_metadata?.user_name,
+                                        provider: session.user.app_metadata?.provider
                                     })
                                 })
                                 const data = await res.json()
+
+                                if (!res.ok && data.rejected) {
+                                    setStatus('❌ Login Rejected: Please Sign Up with GitHub.')
+                                    await supabase.auth.signOut()
+                                    setTimeout(() => router.push('/'), 3000)
+                                    return
+                                }
+
                                 isNewUser = data.isNewUser
                             } catch (e) {
                                 console.error('Failed to store token:', e)

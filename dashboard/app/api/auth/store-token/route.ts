@@ -13,10 +13,10 @@ function getServiceClient() {
 
 export async function POST(request: Request) {
     try {
-        const { userId, providerToken, username } = await request.json()
+        const { userId, providerToken, username, provider } = await request.json()
 
-        if (!userId || !providerToken) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+        if (!userId) {
+            return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
         }
 
         const supabase = getServiceClient()
@@ -31,17 +31,30 @@ export async function POST(request: Request) {
         let isNewUser = false
 
         if (existing) {
-            // Update existing user
-            await supabase
-                .from('user_settings')
-                .update({
-                    github_access_token: providerToken,
-                    github_username: username,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', userId)
+            // Update existing user (only if token is provided)
+            if (providerToken) {
+                await supabase
+                    .from('user_settings')
+                    .update({
+                        github_access_token: providerToken,
+                        github_username: username,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId)
+            }
         } else {
-            // Create new user
+            // NEW USER LOGIC
+            // If provider is Google, REJECT signup
+            if (provider === 'google') {
+                return NextResponse.json({ error: 'Google signups are disabled. Please use GitHub.', isNewUser: true, rejected: true }, { status: 403 })
+            }
+
+            // Otherwise create new user (GitHub)
+            if (!providerToken) {
+                // Even if GitHub, we need token to create account properly
+                return NextResponse.json({ error: 'Missing GitHub token' }, { status: 400 })
+            }
+
             isNewUser = true
             await supabase
                 .from('user_settings')

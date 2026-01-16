@@ -463,33 +463,7 @@ export default function Dashboard() {
         </div>
     )
 
-    // Google Login Check - Block access if provider is google
-    if (authUser?.app_metadata?.provider === 'google') {
-        return (
-            <div className="min-h-screen bg-[#0d1117] flex items-center justify-center p-4">
-                <div className="max-w-md w-full bg-[#161b22] border border-[#30363d] rounded-2xl p-8 text-center space-y-6">
-                    <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto text-[#f85149]">
-                        <AlertCircle size={32} />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-white mb-2">GitHub Login Required</h2>
-                        <p className="text-[#8b949e]">
-                            You are currently logged in with <strong>Google</strong>. But the bot requires a direct GitHub connection to access your repositories.
-                        </p>
-                    </div>
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-sm text-[#f85149]">
-                        Please logout and sign in using <strong>GitHub</strong>.
-                    </div>
-                    <button
-                        onClick={() => signOut()}
-                        className="w-full py-3 bg-white text-black rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-                    >
-                        <LogOut size={18} /> Logout & Switch
-                    </button>
-                </div>
-            </div>
-        )
-    }
+    {/* Google Login Check Removed - Handled in Auth Callback */ }
 
     return (
         <div key="dashboard" className="min-h-screen bg-[#0d1117] text-white relative overflow-hidden">
