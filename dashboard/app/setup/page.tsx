@@ -198,32 +198,58 @@ export default function SetupPage() {
                     <motion.form initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} onSubmit={handleSubmit} className="bg-[#0A0A0A] border border-white/10 rounded-3xl p-8 space-y-8">
                         {step === 1 && (
                             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400">
-                                        <Github size={24} />
+                                {/* Instructional Tooltip */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl p-4 mb-4"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <motion.span
+                                            animate={{ scale: [1, 1.2, 1] }}
+                                            transition={{ repeat: Infinity, duration: 2 }}
+                                            className="text-2xl"
+                                        >
+                                            💡
+                                        </motion.span>
+                                        <div className="text-sm text-gray-300">
+                                            <p className="font-semibold text-white mb-1">Getting Started</p>
+                                            <p>Fill in your details below. Don't worry, you can change everything later from your dashboard!</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold">GitHub Configuration</h3>
-                                        <p className="text-sm text-gray-400">Connect your account and choose a repository</p>
-                                    </div>
-                                </div>
+                                </motion.div>
 
-                                <div>
+                                <div className="relative">
                                     <label className="block text-sm font-medium mb-2">GitHub Username</label>
                                     <input type="text" required value={formData.github_username} onChange={(e) => setFormData({ ...formData, github_username: e.target.value })} placeholder="octocat" className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-blue-500 transition-colors" />
-                                    <p className="text-xs text-gray-500 mt-2">This should match your GitHub account username</p>
+                                    <p className="text-xs text-gray-500 mt-2">✓ This is auto-detected from your login</p>
                                 </div>
 
                                 <div className="relative">
-                                    <label className="block text-sm font-medium mb-2">Repository Name</label>
+                                    <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                                        Repository Name
+                                        <span className="text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">Customizable</span>
+                                    </label>
                                     <div className="flex items-center gap-2 relative">
                                         <span className="text-gray-500 font-mono">{formData.github_username || 'username'}/</span>
                                         <input type="text" required value={formData.repo_name} onChange={(e) => setFormData({ ...formData, repo_name: e.target.value })} placeholder="auto-contributions" className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-blue-500 transition-colors" />
-                                        {formData.repo_name === 'auto-contributions' && (
-                                            <PointingFinger text="You can change this!" />
-                                        )}
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-2">Bot will create this repository if it doesn't exist</p>
+                                    {formData.repo_name === 'auto-contributions' && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="mt-2 flex items-center gap-2 text-sm"
+                                        >
+                                            <motion.span
+                                                animate={{ x: [0, 5, 0] }}
+                                                transition={{ repeat: Infinity, duration: 1 }}
+                                            >
+                                                👆
+                                            </motion.span>
+                                            <span className="text-blue-400">You can rename this! Try "leetcode-solutions", "daily-coding", or any name you like.</span>
+                                        </motion.div>
+                                    )}
+                                    <p className="text-xs text-gray-500 mt-2">Bot will automatically create this repo if it doesn't exist</p>
                                 </div>
 
                                 <div>
@@ -280,8 +306,8 @@ export default function SetupPage() {
                                                 <label
                                                     key={lang.value}
                                                     className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition-all ${isSelected
-                                                            ? 'bg-blue-500/20 border-blue-500 text-blue-300'
-                                                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                                        ? 'bg-blue-500/20 border-blue-500 text-blue-300'
+                                                        : 'bg-white/5 border-white/10 hover:bg-white/10'
                                                         }`}
                                                 >
                                                     <input
@@ -390,7 +416,7 @@ export default function SetupPage() {
                         )}
                     </motion.form>
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     )
 }
