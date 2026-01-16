@@ -323,9 +323,22 @@ export default function LoginPage() {
 
                   {/* Footer */}
                   <div className="border-t border-white/10 p-3 bg-white/5">
-                    <p className="text-[10px] text-gray-500 text-center">
-                      Made with 💚 by Rishit Tandon
-                    </p>
+                    {sessionUser ? (
+                      <button
+                        onClick={async () => {
+                          await supabase.auth.signOut()
+                          setShowLogoDropdown(false)
+                          router.refresh()
+                        }}
+                        className="w-full flex items-center justify-center gap-2 py-2 text-red-400 hover:text-red-300 transition-colors text-sm"
+                      >
+                        🚪 Logout
+                      </button>
+                    ) : (
+                      <p className="text-[10px] text-gray-500 text-center">
+                        Made with 💚 by Rishit Tandon
+                      </p>
+                    )}
                   </div>
                 </motion.div>
               </>
@@ -365,9 +378,21 @@ export default function LoginPage() {
 
             <Link href="/pricing" data-tutorial="pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</Link>
             {sessionUser ? (
-              <Link href="/dashboard" className={`px-4 sm:px-5 py-2 rounded-full font-bold transition-all shadow-lg border text-xs sm:text-sm ${theme.navbarButton}`}>
-                Dashboard
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link href="/dashboard" className={`px-4 sm:px-5 py-2 rounded-full font-bold transition-all shadow-lg border text-xs sm:text-sm ${theme.navbarButton}`}>
+                  Dashboard
+                </Link>
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut()
+                    router.refresh()
+                  }}
+                  className="px-3 py-2 rounded-full text-xs text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                  title="Logout"
+                >
+                  🚪
+                </button>
+              </div>
             ) : (
               <button onClick={() => setActiveModal('tutorial')} className={`px-4 sm:px-5 py-2 rounded-full font-bold transition-all shadow-lg border text-xs sm:text-sm ${theme.navbarButton}`}>
                 Tutorial
