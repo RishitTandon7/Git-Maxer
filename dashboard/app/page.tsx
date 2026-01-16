@@ -27,6 +27,31 @@ type Theme = {
 export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState<'github' | 'google' | null>(null)
+
+  const handleLogout = async () => {
+    try {
+      // 1. Call API to clear server cookies first
+      await fetch('/api/auth/signout', { method: 'POST' })
+
+      // 2. Sign out from Supabase (global)
+      await supabase.auth.signOut({ scope: 'global' })
+
+      // 3. Clear all local storage
+      localStorage.clear()
+      sessionStorage.clear()
+
+      // 4. Manually expire all cookies
+      document.cookie.split(";").forEach(c => {
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+      })
+
+      // 5. Hard redirect
+      window.location.href = '/'
+    } catch (e) {
+      console.error('Logout error:', e)
+      window.location.href = '/'
+    }
+  }
   const [showSocial, setShowSocial] = useState(false)
   const { user: sessionUser, userPlan, loading: authLoading } = useAuth()
 
@@ -325,16 +350,8 @@ export default function LoginPage() {
                   <div className="border-t border-white/10 p-3 bg-white/5">
                     {sessionUser ? (
                       <button
-                        onClick={async () => {
-                          await supabase.auth.signOut({ scope: 'global' })
-                          localStorage.clear()
-                          sessionStorage.clear()
-                          document.cookie.split(";").forEach(c => {
-                            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
-                          })
-                          window.location.replace('/')
-                        }}
-                        className="w-full flex items-center justify-center gap-2 py-2 text-red-400 hover:text-red-300 transition-colors text-sm"
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center gap-2 py-2 text-gray-400 hover:text-white transition-colors text-sm"
                       >
                         🚪 Logout
                       </button>
@@ -488,20 +505,8 @@ export default function LoginPage() {
                   <span>Go to Dashboard</span>
                 </Link>
                 <button
-                  onClick={async () => {
-                    // Sign out with global scope
-                    await supabase.auth.signOut({ scope: 'global' })
-                    // Clear all storage
-                    localStorage.clear()
-                    sessionStorage.clear()
-                    // Delete cookies manually
-                    document.cookie.split(";").forEach(c => {
-                      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
-                    })
-                    // Hard redirect
-                    window.location.replace('/')
-                  }}
-                  className="h-14 px-6 rounded-full font-bold text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2 bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 w-full sm:w-auto justify-center"
+                  onClick={handleLogout}
+                  className="h-14 px-6 rounded-full font-bold text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2 bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 w-full sm:w-auto justify-center"
                 >
                   🚪 <span>Logout</span>
                 </button>
