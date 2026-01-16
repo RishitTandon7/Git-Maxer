@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { motion } from 'framer-motion'
-import { Github, Mail, BookOpen, Users, FolderGit2, ChevronDown, X, Sparkles } from 'lucide-react'
+import { Github, Mail, BookOpen, Users, FolderGit2, ChevronDown, X, Sparkles, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from './providers/AuthProvider'
@@ -30,26 +30,30 @@ export default function LoginPage() {
 
   const handleLogout = async () => {
     try {
-      // 1. Call API to clear server cookies first
-      await fetch('/api/auth/signout', { method: 'POST' })
+      // 1. Clear Supabase Session first (it might fail if network is bad, but try anyway)
+      const { error } = await supabase.auth.signOut()
+      if (error) console.error('Supabase signout error:', error)
 
-      // 2. Sign out from Supabase (global)
-      await supabase.auth.signOut({ scope: 'global' })
+      // 2. Call API to clear server cookies (robust server-side clear)
+      await fetch('/api/auth/signout', { method: 'POST', cache: 'no-store' })
 
-      // 3. Clear all local storage
-      localStorage.clear()
-      sessionStorage.clear()
+      // 3. Clear all Local Storage & Session Storage
+      if (typeof window !== 'undefined') {
+        window.localStorage.clear()
+        window.sessionStorage.clear()
 
-      // 4. Manually expire all cookies
-      document.cookie.split(";").forEach(c => {
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
-      })
+        // 4. Aggressively clear cookies for root path
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+      }
 
-      // 5. Hard redirect
-      window.location.href = '/'
+      // 5. Force Hard Reload to Root
+      window.location.replace('/')
     } catch (e) {
-      console.error('Logout error:', e)
-      window.location.href = '/'
+      console.error('Logout Exception:', e)
+      // Fallback: Force reload anyway
+      window.location.replace('/')
     }
   }
   const [showSocial, setShowSocial] = useState(false)
@@ -353,7 +357,7 @@ export default function LoginPage() {
                         onClick={handleLogout}
                         className="w-full flex items-center justify-center gap-2 py-2 text-gray-400 hover:text-white transition-colors text-sm"
                       >
-                        🚪 Logout
+                        <LogOut size={16} /> Logout
                       </button>
                     ) : (
                       <p className="text-[10px] text-gray-500 text-center">
@@ -508,7 +512,7 @@ export default function LoginPage() {
                   onClick={handleLogout}
                   className="h-14 px-6 rounded-full font-bold text-sm transition-all hover:scale-105 active:scale-95 flex items-center gap-2 bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 w-full sm:w-auto justify-center"
                 >
-                  🚪 <span>Logout</span>
+                  <LogOut size={18} /> <span>Logout</span>
                 </button>
               </>
             ) : (
