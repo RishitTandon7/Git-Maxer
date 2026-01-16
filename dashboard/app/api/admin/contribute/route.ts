@@ -11,6 +11,288 @@ function getServiceClient() {
     })
 }
 
+// Code templates for different languages
+function getCodeContent(language: string, date: string): { content: string; ext: string } {
+    const templates: Record<string, { content: string; ext: string }> = {
+        python: {
+            ext: 'py',
+            content: `class Solution:
+    """
+    Daily coding challenge solution.
+    Problem: Optimize data processing pipeline
+    Date: ${date}
+    """
+    def process_data(self, data: list) -> list:
+        result = []
+        seen = set()
+        for item in data:
+            if item not in seen:
+                seen.add(item)
+                result.append(item)
+        return sorted(result)
+
+    def validate_input(self, data):
+        return data is not None and len(data) > 0
+
+if __name__ == "__main__":
+    sol = Solution()
+    print(f"Processing complete at ${date}T20:00:00Z")
+`
+        },
+        javascript: {
+            ext: 'js',
+            content: `/**
+ * Daily coding challenge solution
+ * Problem: Optimize data processing pipeline
+ * Date: ${date}
+ */
+class Solution {
+    processData(data) {
+        const seen = new Set();
+        const result = [];
+        for (const item of data) {
+            if (!seen.has(item)) {
+                seen.add(item);
+                result.push(item);
+            }
+        }
+        return result.sort();
+    }
+
+    validateInput(data) {
+        return data !== null && data.length > 0;
+    }
+}
+
+const sol = new Solution();
+console.log(\`Processing complete at ${date}T20:00:00Z\`);
+module.exports = { Solution };
+`
+        },
+        typescript: {
+            ext: 'ts',
+            content: `/**
+ * Daily coding challenge solution
+ * Problem: Optimize data processing pipeline  
+ * Date: ${date}
+ */
+class Solution {
+    processData(data: any[]): any[] {
+        const seen = new Set<any>();
+        const result: any[] = [];
+        for (const item of data) {
+            if (!seen.has(item)) {
+                seen.add(item);
+                result.push(item);
+            }
+        }
+        return result.sort();
+    }
+
+    validateInput(data: any[] | null): boolean {
+        return data !== null && data.length > 0;
+    }
+}
+
+const sol = new Solution();
+console.log(\`Processing complete at ${date}T20:00:00Z\`);
+export { Solution };
+`
+        },
+        java: {
+            ext: 'java',
+            content: `import java.util.*;
+
+/**
+ * Daily coding challenge solution
+ * Problem: Optimize data processing pipeline
+ * Date: ${date}
+ */
+public class Solution {
+    public List<Object> processData(List<Object> data) {
+        Set<Object> seen = new HashSet<>();
+        List<Object> result = new ArrayList<>();
+        for (Object item : data) {
+            if (!seen.contains(item)) {
+                seen.add(item);
+                result.add(item);
+            }
+        }
+        Collections.sort(result, (a, b) -> a.toString().compareTo(b.toString()));
+        return result;
+    }
+
+    public boolean validateInput(List<Object> data) {
+        return data != null && !data.isEmpty();
+    }
+
+    public static void main(String[] args) {
+        Solution sol = new Solution();
+        System.out.println("Processing complete at ${date}T20:00:00Z");
+    }
+}
+`
+        },
+        cpp: {
+            ext: 'cpp',
+            content: `#include <iostream>
+#include <vector>
+#include <set>
+#include <algorithm>
+
+/**
+ * Daily coding challenge solution
+ * Problem: Optimize data processing pipeline
+ * Date: ${date}
+ */
+class Solution {
+public:
+    std::vector<int> processData(std::vector<int>& data) {
+        std::set<int> seen;
+        std::vector<int> result;
+        for (int item : data) {
+            if (seen.find(item) == seen.end()) {
+                seen.insert(item);
+                result.push_back(item);
+            }
+        }
+        std::sort(result.begin(), result.end());
+        return result;
+    }
+
+    bool validateInput(std::vector<int>& data) {
+        return !data.empty();
+    }
+};
+
+int main() {
+    Solution sol;
+    std::cout << "Processing complete at ${date}T20:00:00Z" << std::endl;
+    return 0;
+}
+`
+        },
+        go: {
+            ext: 'go',
+            content: `package main
+
+import (
+    "fmt"
+    "sort"
+)
+
+// Daily coding challenge solution
+// Problem: Optimize data processing pipeline
+// Date: ${date}
+
+type Solution struct{}
+
+func (s *Solution) ProcessData(data []interface{}) []interface{} {
+    seen := make(map[interface{}]bool)
+    var result []interface{}
+    for _, item := range data {
+        if !seen[item] {
+            seen[item] = true
+            result = append(result, item)
+        }
+    }
+    return result
+}
+
+func (s *Solution) ValidateInput(data []interface{}) bool {
+    return data != nil && len(data) > 0
+}
+
+func main() {
+    sol := &Solution{}
+    _ = sol
+    fmt.Printf("Processing complete at ${date}T20:00:00Z\\n")
+}
+`
+        },
+        rust: {
+            ext: 'rs',
+            content: `use std::collections::HashSet;
+
+/// Daily coding challenge solution
+/// Problem: Optimize data processing pipeline
+/// Date: ${date}
+
+struct Solution;
+
+impl Solution {
+    fn process_data(&self, data: Vec<i32>) -> Vec<i32> {
+        let mut seen = HashSet::new();
+        let mut result = Vec::new();
+        for item in data {
+            if !seen.contains(&item) {
+                seen.insert(item);
+                result.push(item);
+            }
+        }
+        result.sort();
+        result
+    }
+
+    fn validate_input(&self, data: &Vec<i32>) -> bool {
+        !data.is_empty()
+    }
+}
+
+fn main() {
+    let sol = Solution;
+    let _ = sol;
+    println!("Processing complete at ${date}T20:00:00Z");
+}
+`
+        },
+        csharp: {
+            ext: 'cs',
+            content: `using System;
+using System.Collections.Generic;
+using System.Linq;
+
+/// <summary>
+/// Daily coding challenge solution
+/// Problem: Optimize data processing pipeline
+/// Date: ${date}
+/// </summary>
+public class Solution
+{
+    public List<object> ProcessData(List<object> data)
+    {
+        var seen = new HashSet<object>();
+        var result = new List<object>();
+        foreach (var item in data)
+        {
+            if (!seen.Contains(item))
+            {
+                seen.Add(item);
+                result.Add(item);
+            }
+        }
+        return result.OrderBy(x => x.ToString()).ToList();
+    }
+
+    public bool ValidateInput(List<object> data)
+    {
+        return data != null && data.Count > 0;
+    }
+
+    public static void Main(string[] args)
+    {
+        var sol = new Solution();
+        Console.WriteLine($"Processing complete at ${date}T20:00:00Z");
+    }
+}
+`
+        }
+    };
+
+    return templates[language] || templates.python;
+}
+
+
 // Helper function to create a backdated commit using Git Data API
 async function createBackdatedCommit(
     headers: Record<string, string>,
@@ -117,7 +399,7 @@ async function createBackdatedCommit(
 // Manual contribution trigger for a specific user and date
 export async function POST(request: Request) {
     try {
-        const { userId, username, date, backfillDays } = await request.json()
+        const { userId, username, date, backfillDays, language = 'python' } = await request.json()
 
         if (!userId || !username) {
             return NextResponse.json({ error: 'Missing userId or username' }, { status: 400 })
@@ -189,36 +471,11 @@ export async function POST(request: Request) {
             targetDateObj.setDate(targetDateObj.getDate() - i)
             const targetDateStr = date && i === 0 ? date : targetDateObj.toISOString().split('T')[0]
 
-            // Create a realistic looking coding challenge solution
-            const content = `class Solution:
-    """
-    Daily coding challenge solution.
-    Problem: Optimize data processing pipeline
-    Date: ${targetDateStr}
-    """
-    def process_data(self, data: list) -> list:
-        # Optimization algorithm
-        result = []
-        seen = set()
-        
-        for item in data:
-            if item not in seen:
-                seen.add(item)
-                result.append(item)
-                
-        return sorted(result)
-
-    def validate_input(self, data):
-        return data is not None and len(data) > 0
-
-# Test cases
-if __name__ == "__main__":
-    sol = Solution()
-    print(f"Processing complete at ${targetDateStr}T20:00:00Z")
-`
+            // Get content for the selected language
+            const { content, ext } = getCodeContent(language, targetDateStr)
 
             // Use a clean, realistic path with unique timestamp to avoid conflicts
-            const fileName = `challenges/challenge_${targetDateStr.replace(/-/g, '_')}_${Date.now()}.py`
+            const fileName = `challenges/challenge_${targetDateStr.replace(/-/g, '_')}_${Date.now()}.${ext}`
 
             // Create date object for the target date (set to 8 PM for natural commit time)
             const commitDate = new Date(targetDateStr)

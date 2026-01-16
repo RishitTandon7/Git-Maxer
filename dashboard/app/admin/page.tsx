@@ -331,6 +331,18 @@ function AllUsersTable({ stats }: { stats: any }) {
     const [selectedUsers, setSelectedUsers] = useState<string[]>([])
     const [targetDate, setTargetDate] = useState(new Date().toISOString().split('T')[0])
     const [actionLoading, setActionLoading] = useState(false)
+    const [selectedLanguage, setSelectedLanguage] = useState('python')
+
+    const languages = [
+        { value: 'python', label: '🐍 Python', ext: 'py' },
+        { value: 'javascript', label: '📜 JavaScript', ext: 'js' },
+        { value: 'typescript', label: '💙 TypeScript', ext: 'ts' },
+        { value: 'java', label: '☕ Java', ext: 'java' },
+        { value: 'cpp', label: '⚡ C++', ext: 'cpp' },
+        { value: 'go', label: '🐹 Go', ext: 'go' },
+        { value: 'rust', label: '🦀 Rust', ext: 'rs' },
+        { value: 'csharp', label: '💜 C#', ext: 'cs' },
+    ]
 
     // Use allUsers from the admin stats API (bypasses RLS)
     const allUsers = stats?.allUsers || []
@@ -378,7 +390,7 @@ function AllUsersTable({ stats }: { stats: any }) {
                 const res = await fetch('/api/admin/contribute', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, username: user.github_username, date: targetDate })
+                    body: JSON.stringify({ userId, username: user.github_username, date: targetDate, language: selectedLanguage })
                 })
                 const data = await res.json()
                 if (data.success) success++
@@ -447,6 +459,18 @@ function AllUsersTable({ stats }: { stats: any }) {
                             onChange={(e) => setTargetDate(e.target.value)}
                             className="px-3 py-1.5 bg-black/50 border border-white/20 rounded-lg text-sm text-white"
                         />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-gray-400 text-xs">Language:</span>
+                        <select
+                            value={selectedLanguage}
+                            onChange={(e) => setSelectedLanguage(e.target.value)}
+                            className="px-3 py-1.5 bg-black/50 border border-white/20 rounded-lg text-sm text-white"
+                        >
+                            {languages.map(lang => (
+                                <option key={lang.value} value={lang.value}>{lang.label}</option>
+                            ))}
+                        </select>
                     </div>
                     <button
                         onClick={runBulkContribute}
