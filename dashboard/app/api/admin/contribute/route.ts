@@ -133,7 +133,12 @@ export async function POST(request: Request) {
             .single()
 
         if (userError || !user?.github_access_token) {
-            return NextResponse.json({ error: 'User not found or no GitHub token' }, { status: 404 })
+            console.error('User lookup failed:', { userId, userError })
+            return NextResponse.json({
+                error: 'User not found or no GitHub token',
+                details: userError?.message || 'No token in database',
+                userId
+            }, { status: 404 })
         }
 
         const headers: Record<string, string> = {
@@ -167,7 +172,12 @@ export async function POST(request: Request) {
         // Check if repo exists
         const repoRes = await fetch(`https://api.github.com/repos/${fullRepo}`, { headers })
         if (!repoRes.ok) {
-            return NextResponse.json({ error: `Repository ${fullRepo} not found` }, { status: 404 })
+            console.error('Repo not found:', { fullRepo, status: repoRes.status })
+            return NextResponse.json({
+                error: `Repository ${fullRepo} not found`,
+                status: repoRes.status,
+                hint: 'Repo may be private or not created yet'
+            }, { status: 404 })
         }
 
         let commitsCreated = 0
