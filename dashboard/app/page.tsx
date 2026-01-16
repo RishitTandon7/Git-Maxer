@@ -378,21 +378,9 @@ export default function LoginPage() {
 
             <Link href="/pricing" data-tutorial="pricing" className="text-gray-400 hover:text-white transition-colors">Pricing</Link>
             {sessionUser ? (
-              <div className="flex items-center gap-2">
-                <Link href="/dashboard" className={`px-4 sm:px-5 py-2 rounded-full font-bold transition-all shadow-lg border text-xs sm:text-sm ${theme.navbarButton}`}>
-                  Dashboard
-                </Link>
-                <button
-                  onClick={async () => {
-                    await supabase.auth.signOut()
-                    router.refresh()
-                  }}
-                  className="px-3 py-2 rounded-full text-xs text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-                  title="Logout"
-                >
-                  🚪
-                </button>
-              </div>
+              <Link href="/dashboard" className={`px-4 sm:px-5 py-2 rounded-full font-bold transition-all shadow-lg border text-xs sm:text-sm ${theme.navbarButton}`}>
+                Dashboard
+              </Link>
             ) : (
               <button onClick={() => setActiveModal('tutorial')} className={`px-4 sm:px-5 py-2 rounded-full font-bold transition-all shadow-lg border text-xs sm:text-sm ${theme.navbarButton}`}>
                 Tutorial
