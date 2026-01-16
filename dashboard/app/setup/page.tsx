@@ -16,7 +16,7 @@ export default function SetupPage() {
         github_username: '',
         repo_name: 'auto-contributions',
         repo_visibility: 'public',
-        preferred_language: 'any',
+        preferred_languages: ['any'] as string[], // Changed to array for multi-select
         commit_time: 'random',
         specific_time: '09:00',
         min_contributions: 1,
@@ -53,7 +53,7 @@ export default function SetupPage() {
                 github_username: formData.github_username,
                 repo_name: formData.repo_name,
                 repo_visibility: formData.repo_visibility,
-                preferred_language: formData.preferred_language,
+                preferred_language: formData.preferred_languages.join(','), // Store as comma-separated
                 commit_time: formData.commit_time === 'random' ? null : formData.specific_time,
                 min_contributions: formData.min_contributions,
                 pause_bot: formData.pause_bot
@@ -148,6 +148,24 @@ export default function SetupPage() {
         { value: 'ruby', label: 'Ruby' },
     ]
 
+    // Pointing finger component for guided setup
+    const PointingFinger = ({ text }: { text: string }) => (
+        <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="absolute -right-4 top-1/2 -translate-y-1/2 translate-x-full flex items-center gap-2"
+        >
+            <motion.span
+                animate={{ x: [0, -8, 0] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+                className="text-2xl"
+            >
+                👈
+            </motion.span>
+            <span className="text-xs text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg whitespace-nowrap">{text}</span>
+        </motion.div>
+    )
+
     return (
         <div className="min-h-screen bg-[#050505] text-white selection:bg-white/20 overflow-x-hidden relative">
             <div className="fixed inset-0 z-0 pointer-events-none">
@@ -196,11 +214,14 @@ export default function SetupPage() {
                                     <p className="text-xs text-gray-500 mt-2">This should match your GitHub account username</p>
                                 </div>
 
-                                <div>
+                                <div className="relative">
                                     <label className="block text-sm font-medium mb-2">Repository Name</label>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 relative">
                                         <span className="text-gray-500 font-mono">{formData.github_username || 'username'}/</span>
                                         <input type="text" required value={formData.repo_name} onChange={(e) => setFormData({ ...formData, repo_name: e.target.value })} placeholder="auto-contributions" className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-blue-500 transition-colors" />
+                                        {formData.repo_name === 'auto-contributions' && (
+                                            <PointingFinger text="You can change this!" />
+                                        )}
                                     </div>
                                     <p className="text-xs text-gray-500 mt-2">Bot will create this repository if it doesn't exist</p>
                                 </div>
@@ -250,13 +271,47 @@ export default function SetupPage() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">Preferred Language</label>
-                                    <select value={formData.preferred_language} onChange={(e) => setFormData({ ...formData, preferred_language: e.target.value })} className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-blue-500 transition-colors">
-                                        {languages.map(lang => (
-                                            <option key={lang.value} value={lang.value} className="bg-[#0A0A0A]">{lang.label}</option>
-                                        ))}
-                                    </select>
-                                    <p className="text-xs text-gray-500 mt-2">AI will generate code in this language (or any if set to "Any")</p>
+                                    <label className="block text-sm font-medium mb-3">Preferred Languages (select multiple)</label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {languages.map(lang => {
+                                            const isSelected = formData.preferred_languages.includes(lang.value)
+                                            const isAny = lang.value === 'any'
+                                            return (
+                                                <label
+                                                    key={lang.value}
+                                                    className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition-all ${isSelected
+                                                            ? 'bg-blue-500/20 border-blue-500 text-blue-300'
+                                                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                                        }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={(e) => {
+                                                            if (isAny) {
+                                                                // If selecting "any", clear all others
+                                                                setFormData({ ...formData, preferred_languages: e.target.checked ? ['any'] : [] })
+                                                            } else {
+                                                                // If selecting a specific language
+                                                                let newLangs = e.target.checked
+                                                                    ? [...formData.preferred_languages.filter(l => l !== 'any'), lang.value]
+                                                                    : formData.preferred_languages.filter(l => l !== lang.value)
+                                                                if (newLangs.length === 0) newLangs = ['any']
+                                                                setFormData({ ...formData, preferred_languages: newLangs })
+                                                            }
+                                                        }}
+                                                        className="w-4 h-4 rounded"
+                                                    />
+                                                    <span className="text-sm">{lang.label}</span>
+                                                </label>
+                                            )
+                                        })}
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        {formData.preferred_languages.includes('any')
+                                            ? '✨ AI will randomly choose from all languages'
+                                            : `Selected: ${formData.preferred_languages.join(', ')}`}
+                                    </p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-2">Commit Time</label>
