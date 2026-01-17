@@ -85,7 +85,7 @@ def test_run():
                     repo = user_obj.create_repo(
                         repo_name,
                         private=private,
-                        description="Auto-generated contributions by GitMaxer",
+                        description="Auto-generated contributions",
                         auto_init=True
                     )
                     print(f"Created repository {full_repo_name}")

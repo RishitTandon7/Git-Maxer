@@ -101,7 +101,7 @@ export async function POST(req: Request) {
                     },
                     body: JSON.stringify({
                         name: finalRepoName,
-                        description: `${projectName} - AI-generated project by GitMaxer Enterprise`,
+                        description: `${projectName} - AI-generated project`,
                         private: false,
                         auto_init: true
                     })

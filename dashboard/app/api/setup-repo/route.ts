@@ -35,7 +35,7 @@ export async function POST(request: Request) {
                 body: JSON.stringify({
                     name: repo_name,
                     private: visibility === 'private',
-                    description: 'Auto-generated contributions by GitMaxer',
+                    description: 'Auto-generated contributions',
                     auto_init: true
                 })
             })

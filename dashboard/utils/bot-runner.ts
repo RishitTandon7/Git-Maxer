@@ -55,7 +55,7 @@ export async function runBotForUser(userId: string) {
                 },
                 body: JSON.stringify({
                     name: repoName,
-                    description: 'Auto-generated contributions by GitMaxer',
+                    description: 'Auto-generated contributions',
                     private: userSettings.repo_visibility === 'private',
                     auto_init: true
                 })
