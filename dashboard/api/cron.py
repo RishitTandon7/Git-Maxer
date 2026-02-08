@@ -114,7 +114,7 @@ class handler(BaseHTTPRequestHandler):
                             repo = user_obj.create_repo(
                                 repo_name,
                                 private=private,
-                                description="Auto-generated contributions",
+                                description="Daily contributions",
                                 auto_init=True
                             )
                             logs.append(f"Created repository {full_repo_name}")
@@ -313,42 +313,104 @@ class handler(BaseHTTPRequestHandler):
                                 if not repo_exists:
                                     logs.append(f"LeetCode: Repo {leetcode_full} created. Skipping content to avoid double commit.")
                                 else:
-                                    # Generate LeetCode solution (simple template for now)
+                                    # 🚀 AI-POWERED LEETCODE: Generate solution for ANY problem (3000+)
                                     import random
                                     import hashlib
-                                    problems = [
-                                        {"num": 1, "title": "Two Sum", "difficulty": "Easy"},
-                                        {"num": 9, "title": "Palindrome Number", "difficulty": "Easy"},
-                                        {"num": 20, "title": "Valid Parentheses", "difficulty": "Easy"},
-                                        {"num": 21, "title": "Merge Two Sorted Lists", "difficulty": "Easy"},
-                                        {"num": 53, "title": "Maximum Subarray", "difficulty": "Medium"},
-                                        {"num": 70, "title": "Climbing Stairs", "difficulty": "Easy"},
-                                        {"num": 121, "title": "Best Time to Buy and Sell Stock", "difficulty": "Easy"},
-                                        {"num": 200, "title": "Number of Islands", "difficulty": "Medium"},
-                                        {"num": 206, "title": "Reverse Linked List", "difficulty": "Easy"},
-                                        {"num": 238, "title": "Product of Array Except Self", "difficulty": "Medium"},
-                                    ]
-                                    problem = random.choice(problems)
                                     
-                                    leetcode_content = f'''# {problem["num"]}. {problem["title"]}
-# Difficulty: {problem["difficulty"]}
-# LeetCode Link: https://leetcode.com/problems/{problem["title"].lower().replace(" ", "-")}/
+                                    # Pick a random LeetCode problem number (1-3000)
+                                    # Gemini knows ALL problems - no need to hardcode them!
+                                    problem_number = random.randint(1, 3000)
+                                    
+                                    # Use Gemini AI to solve ANY LeetCode problem
+                                    try:
+                                        import google.generativeai as genai
+                                        gemini_key = os.environ.get("GEMINI_API_KEY")
+                                        genai.configure(api_key=gemini_key)
+                                        model = genai.GenerativeModel('gemini-1.5-flash')
+                                        
+                                        # Simple prompt: just send the problem number!
+                                        ai_prompt = f"""You are a LeetCode expert. Solve LeetCode Problem #{problem_number}.
+
+**Instructions:**
+1. First, identify the problem title and difficulty
+2. Generate a COMPLETE, WORKING Python solution
+3. Use the OPTIMAL algorithm (best time/space complexity)
+4. Include detailed docstring explaining the approach
+5. Add inline comments for key steps
+6. Include Time & Space Complexity analysis
+
+**Output Format:**
+```python
+# Problem Title
+# Difficulty: [Easy/Medium/Hard]
+# Category: [Array/String/DP/etc]
+
+class Solution:
+    def methodName(self, params) -> ReturnType:
+        \"\"\"
+        [Clear explanation of approach and algorithm]
+        \"\"\"
+        # Your optimal solution here
+        
+# Time Complexity: O(?)
+# Space Complexity: O(?)
+```
+
+Generate production-ready code that passes all test cases!"""
+
+                                        response = model.generate_content(ai_prompt)
+                                        ai_output = response.text
+                                        
+                                        # Clean up markdown code blocks
+                                        if "```python" in ai_output:
+                                            code_start = ai_output.find("```python") + 9
+                                            code_end = ai_output.rfind("```")
+                                            ai_solution = ai_output[code_start:code_end].strip()
+                                        elif "```" in ai_output:
+                                            code_start = ai_output.find("```") + 3
+                                            code_end = ai_output.rfind("```")
+                                            ai_solution = ai_output[code_start:code_end].strip()
+                                        else:
+                                            ai_solution = ai_output.strip()
+                                        
+                                        # Extract title and difficulty from AI response
+                                        problem_title = "Problem"
+                                        difficulty = "Unknown"
+                                        
+                                        # Parse first few lines for metadata
+                                        lines = ai_solution.split('\n')
+                                        for line in lines[:5]:
+                                            if '# ' in line and 'Difficulty:' not in line and 'Category:' not in line:
+                                                # First comment line is usually the title
+                                                problem_title = line.replace('#', '').strip()
+                                                if problem_title.startswith(str(problem_number)):
+                                                    problem_title = problem_title[len(str(problem_number)):].strip('. ')
+                                            if 'Difficulty:' in line:
+                                                difficulty = line.split(':')[1].strip()
+                                        
+                                        leetcode_content = f'''# {problem_number}. {problem_title}
+# LeetCode Link: https://leetcode.com/problems/
+
+{ai_solution}
+
+# Solved: {datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")}
+'''
+                                        logs.append(f"LeetCode: ✅ AI solved Problem #{problem_number} - {problem_title} ({difficulty})")
+                                        
+                                    except Exception as ai_error:
+                                        logs.append(f"LeetCode: ❌ AI failed for Problem #{problem_number} - {ai_error}")
+                                        # Fallback: Create placeholder
+                                        leetcode_content = f'''# {problem_number}. LeetCode Problem
+# LeetCode Link: https://leetcode.com/problems/
 
 class Solution:
     def solve(self):
         """
-        Problem: {problem["title"]}
-        Difficulty: {problem["difficulty"]}
+        LeetCode Problem #{problem_number}
         
-        Approach:
-        - Analyze the problem requirements
-        - Consider edge cases
-        - Implement optimal solution
-        
-        Time Complexity: O(n)
-        Space Complexity: O(1)
+        AI generation temporarily unavailable.
+        Visit LeetCode to solve this problem manually.
         """
-        # Solution implementation
         pass
 
 # Solved: {datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")}
@@ -357,11 +419,11 @@ class Solution:
                                     # Create folder structure: difficulty/problem_title.py
                                     folder = problem["difficulty"]
                                     content_hash = hashlib.md5(leetcode_content.encode()).hexdigest()[:6]
-                                    file_path = f"{folder}/{problem['num']}_{problem['title'].replace(' ', '_').lower()}_{content_hash}.py"
+                                    file_path = f"{folder}/{problem_id}_{problem['title'].replace(' ', '_').lower()}_{content_hash}.py"
                                     
                                     leetcode_repo.create_file(
                                         path=file_path,
-                                        message=f"Solve: {problem['num']}. {problem['title']} ({problem['difficulty']})",
+                                        message=f"Solve: {problem_id}. {problem['title']} ({problem['difficulty']})",
                                         content=leetcode_content,
                                         branch="main"
                                     )
@@ -375,6 +437,158 @@ class Solution:
                                 
                             except Exception as lc_error:
                                 logs.append(f"LeetCode Error for {username}: {lc_error}")
+                    
+                    # === ENTERPRISE PROJECT GENERATION ===
+                    # If user is owner or has enterprise plan, check for active projects
+                    if (is_owner or plan == 'enterprise'):
+                        try:
+                            # Get user's active project
+                            project_response = supabase.table("projects").select("*").eq("user_id", user['id']).eq("status", "in_progress").execute()
+                            
+                            if project_response.data and len(project_response.data) > 0:
+                                active_project = project_response.data[0]
+                                project_id = active_project['id']
+                                current_day = active_project.get('current_day', 0)
+                                days_duration = active_project.get('days_duration', 15)
+                                project_name = active_project.get('project_name', 'Untitled Project')
+                                repo_name = active_project.get('repo_name', 'project')
+                                tech_stack = active_project.get('tech_stack', [])
+                                description = active_project.get('project_description', '')
+                                
+                                logs.append(f"Enterprise: Found active project '{project_name}' for {username} (Day {current_day}/{days_duration})")
+                                
+                                # Check if we need to make today's commit
+                                if current_day < days_duration:
+                                    next_day = current_day + 1
+                                    logs.append(f"Enterprise: Generating code for Day {next_day}...")
+                                    
+                                    # Get GitHub repo
+                                    enterprise_repo_full = f"{github_username}/{repo_name}"
+                                    try:
+                                        enterprise_repo = g.get_repo(enterprise_repo_full)
+                                    except Exception:
+                                        logs.append(f"Enterprise: ERROR - Repository {enterprise_repo_full} not found!")
+                                        raise Exception(f"Repository {enterprise_repo_full} not found. Please ensure it was created.")
+                                    
+                                    # Generate day-specific code using Gemini AI
+                                    gemini_key = os.environ.get("GEMINI_API_KEY")
+                                    
+                                    # Create phase-based prompts
+                                    if next_day <= 3:
+                                        phase = "Setup & Foundation"
+                                        focus = "project structure, configuration files, README, package.json/requirements.txt"
+                                    elif next_day <= 7:
+                                        phase = "Core Features"
+                                        focus = "main components, models, API routes, authentication"
+                                    elif next_day <= 12:
+                                        phase = "Advanced Features"
+                                        focus = "UI components, business logic, integrations, state management"
+                                    else:
+                                        phase = "Polish & Finish"
+                                        focus = "testing, documentation, optimization, deployment setup"
+                                    
+                                    # Use Gemini to generate realistic project code
+                                    try:
+                                        import google.generativeai as genai
+                                        genai.configure(api_key=gemini_key)
+                                        model = genai.GenerativeModel('gemini-1.5-flash')
+                                        
+                                        prompt = f"""Generate realistic, production-quality code for Day {next_day} of a 15-day project build.
+
+Project: {project_name}
+Description: {description}
+Tech Stack: {', '.join(tech_stack) if tech_stack else 'Modern web stack'}
+Phase: {phase} (Day {next_day}/15)
+Focus: {focus}
+
+Generate ONE complete, functional file that would be created on Day {next_day}.
+Include:
+1. Proper file path (e.g., src/components/Header.tsx or backend/routes/auth.js)
+2. Complete, working code with proper imports
+3. Comments explaining key parts
+4. Follow best practices for the tech stack
+
+Format your response EXACTLY as:
+FILEPATH: path/to/file.ext
+CODE:
+[complete code here]
+
+Generate actual working code, not templates or placeholders."""
+
+                                        response = model.generate_content(prompt)
+                                        ai_output = response.text
+                                        
+                                        # Parse AI response
+                                        if "FILEPATH:" in ai_output and "CODE:" in ai_output:
+                                            parts = ai_output.split("CODE:")
+                                            filepath_line = parts[0].replace("FILEPATH:", "").strip()
+                                            code_content = parts[1].strip()
+                                            
+                                            # Clean up code content (remove markdown if present)
+                                            if code_content.startswith("```"):
+                                                lines = code_content.split("\n")
+                                                code_content = "\n".join(lines[1:-1]) if len(lines) > 2 else code_content
+                                            
+                                            # Commit to GitHub
+                                            enterprise_repo.create_file(
+                                                path=filepath_line,
+                                                message=f"Day {next_day}: {phase} - Add {filepath_line.split('/')[-1]}",
+                                                content=code_content,
+                                                branch="main"
+                                            )
+                                            
+                                            # Update project progress
+                                            current_commits = active_project.get('total_commits', 0)
+                                            update_data = {
+                                                'current_day': next_day,
+                                                'total_commits': current_commits + 1
+                                            }
+                                            
+                                            # Mark as completed if we reached the final day
+                                            if next_day >= days_duration:
+                                                update_data['status'] = 'completed'
+                                                logs.append(f"Enterprise: 🎉 Project '{project_name}' COMPLETED!")
+                                            
+                                            supabase.table("projects").update(update_data).eq("id", project_id).execute()
+                                            
+                                            logs.append(f"Enterprise: ✅ Day {next_day} committed to {enterprise_repo_full}")
+                                        else:
+                                            logs.append(f"Enterprise: AI response format error. Using fallback code.")
+                                            # Fallback: Create a simple README update
+                                            fallback_content = f"""# {project_name}
+
+Day {next_day} - {phase}
+
+## Progress Update
+- Current Phase: {phase}
+- Focus Areas: {focus}
+- Tech Stack: {', '.join(tech_stack) if tech_stack else 'TBD'}
+
+This project is being built incrementally over 15 days.
+"""
+                                            enterprise_repo.create_file(
+                                                path=f"day_{next_day}_progress.md",
+                                                message=f"Day {next_day}: {phase} progress update",
+                                                content=fallback_content,
+                                                branch="main"
+                                            )
+                                            
+                                            current_commits = active_project.get('total_commits', 0)
+                                            supabase.table("projects").update({
+                                                'current_day': next_day,
+                                                'total_commits': current_commits + 1
+                                            }).eq("id", project_id).execute()
+                                            
+                                            logs.append(f"Enterprise: Fallback commit made for Day {next_day}")
+                                    
+                                    except Exception as ai_error:
+                                        logs.append(f"Enterprise: AI generation error - {ai_error}")
+                                
+                                else:
+                                    logs.append(f"Enterprise: Project '{project_name}' already at day {current_day}/{days_duration}")
+                            
+                        except Exception as enterprise_error:
+                            logs.append(f"Enterprise Error for {username}: {enterprise_error}")
                 
                 except Exception as user_error:
                     logs.append(f"Error processing user {user.get('github_username')}: {user_error}")
