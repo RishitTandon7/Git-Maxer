@@ -161,8 +161,16 @@ class handler(BaseHTTPRequestHandler):
                     if not should_run_now:
                         continue
 
-                    commits = repo.get_commits(since=today_start)
-                    commit_count = commits.totalCount
+                    try:
+                        commits = repo.get_commits(since=today_start)
+                        commit_count = commits.totalCount
+                    except Exception as e:
+                        if "409" in str(e) or "empty" in str(e).lower():
+                            logs.append(f"Repository is empty (new), starting fresh.")
+                            commit_count = 0
+                        else:
+                            logs.append(f"Error fetching commits: {e}")
+                            continue
                     
                     # OWNER OVERRIDE: Unlimited Access (case-insensitive check)
                     username = user.get('github_username', '')
@@ -326,7 +334,7 @@ class handler(BaseHTTPRequestHandler):
                                         import google.generativeai as genai
                                         gemini_key = os.environ.get("GEMINI_API_KEY")
                                         genai.configure(api_key=gemini_key)
-                                        model = genai.GenerativeModel('gemini-1.5-flash')
+                                        model = genai.GenerativeModel('gemini-2.0-flash')
                                         
                                         # Simple prompt: just send the problem number!
                                         ai_prompt = f"""You are a LeetCode expert. Solve LeetCode Problem #{problem_number}.
@@ -417,13 +425,15 @@ class Solution:
 '''
                                     
                                     # Create folder structure: difficulty/problem_title.py
-                                    folder = problem["difficulty"]
+                                    # Use the extracted values from AI response (not undefined 'problem' dict)
+                                    folder = difficulty if difficulty != "Unknown" else "Medium"
+                                    safe_title = problem_title.replace(' ', '_').replace('/', '_').lower()[:50]
                                     content_hash = hashlib.md5(leetcode_content.encode()).hexdigest()[:6]
-                                    file_path = f"{folder}/{problem_id}_{problem['title'].replace(' ', '_').lower()}_{content_hash}.py"
+                                    file_path = f"{folder}/{problem_number}_{safe_title}_{content_hash}.py"
                                     
                                     leetcode_repo.create_file(
                                         path=file_path,
-                                        message=f"Solve: {problem_id}. {problem['title']} ({problem['difficulty']})",
+                                        message=f"Solve: {problem_number}. {problem_title} ({difficulty})",
                                         content=leetcode_content,
                                         branch="main"
                                     )
@@ -433,7 +443,7 @@ class Solution:
                                         "leetcode_daily_count": leetcode_commits_today + 1
                                     }).eq("id", user['id']).execute()
                                     
-                                    logs.append(f"LeetCode: Committed {problem['title']} to {leetcode_full}")
+                                    logs.append(f"LeetCode: Committed {problem_title} to {leetcode_full}")
                                 
                             except Exception as lc_error:
                                 logs.append(f"LeetCode Error for {username}: {lc_error}")
@@ -491,7 +501,7 @@ class Solution:
                                     try:
                                         import google.generativeai as genai
                                         genai.configure(api_key=gemini_key)
-                                        model = genai.GenerativeModel('gemini-1.5-flash')
+                                        model = genai.GenerativeModel('gemini-2.0-flash')
                                         
                                         prompt = f"""Generate realistic, production-quality code for Day {next_day} of a 15-day project build.
 
