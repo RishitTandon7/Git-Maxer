@@ -9,11 +9,18 @@ export async function GET() {
             ? `https://${process.env.VERCEL_URL}`
             : 'http://localhost:3000'
 
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+        }
+
+        // Add CRON_SECRET if available (required for Vercel Cron authentication)
+        if (process.env.CRON_SECRET) {
+            headers['Authorization'] = `Bearer ${process.env.CRON_SECRET}`
+        }
+
         const response = await fetch(`${baseUrl}/api/cron`, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            }
+            headers: headers
         })
 
         const data = await response.text()
