@@ -175,6 +175,10 @@ class handler(BaseHTTPRequestHandler):
                     plan = user.get('plan_type', 'free')
                     is_owner = username.lower() == 'rishittandon7'
                     
+                    # Debug logging for paid users
+                    if plan in ['pro', 'leetcode', 'enterprise']:
+                        logs.append(f"💎 PAID USER: {username} | Plan: {plan} | Regular commits today: {user.get('daily_commit_count', 0)} | LeetCode commits today: {user.get('leetcode_daily_count', 0)}")
+                    
                     # If Owner, allow them to set high targets (handled in UI) but respect their setting here
                     target_contributions = user['min_contributions']
                     
@@ -187,21 +191,42 @@ class handler(BaseHTTPRequestHandler):
                     
                     if is_owner:
                         logs.append(f"Owner {username}: Bypassing all limits.")
+                    
+                    # Check for specialty repos (for logging and priority)
+                    leetcode_repo_name = user.get('leetcode_repo')
+                    has_enterprise_project = False
+                    
+                    if plan == 'enterprise':
+                        # Check if user has active enterprise project
+                        try:
+                            project_response = supabase.table("projects").select("id").eq("user_id", user['id']).eq("status", "in_progress").execute()
+                            has_enterprise_project = project_response.data and len(project_response.data) > 0
+                            if has_enterprise_project:
+                                logs.append(f"Enterprise Plan: {username} has active project (will process after regular commit)")
+                        except:
+                            pass
+                    
+                    if plan == 'leetcode' and leetcode_repo_name:
+                        logs.append(f"LeetCode Plan: {username} has LeetCode repo configured (will process after regular commit)")
+                    
                     elif not skip_regular_commit:
-                        # FREE TIER: 1 Commit per Week
-                        if plan == 'free':
+                        # Regular repo commit limits (LeetCode/Enterprise treated like Free for regular repo)
+                        if plan in ['free', 'leetcode', 'enterprise']:
+                            # FREE/LEETCODE/ENTERPRISE TIER: 1 Regular Commit per Week
+                            # (LeetCode & Enterprise get DAILY commits to their specialty repos instead)
                             last_commit_str = user.get('last_commit_ts')
                             if last_commit_str:
                                 last_commit_dt = datetime.datetime.fromisoformat(last_commit_str.replace('Z', '+00:00'))
                                 days_diff = (datetime.datetime.now(datetime.timezone.utc) - last_commit_dt).days
                                 if days_diff < 7:
-                                    logs.append(f"Free Plan Limit: User {username} already committed {days_diff} days ago. Skipping (Wait 7 days).")
+                                    plan_label = plan.title() if plan != 'free' else 'Free'
+                                    logs.append(f"{plan_label} Plan: User {username} already committed {days_diff} days ago to regular repo. Skipping (Wait 7 days).")
                                     skip_regular_commit = True
-                        else:
-                            # PRO/LEETCODE: 1 Commit per Day
+                        elif plan == 'pro':
+                            # PRO PLAN ONLY: 1 Daily Commit to regular repo
                             commits_today = user.get('daily_commit_count', 0)
                             if commits_today >= 1:
-                                logs.append(f"{plan.title()} Plan Limit: User {username} reached 1 commit today.")
+                                logs.append(f"Pro Plan: User {username} reached 1 commit today to regular repo.")
                                 skip_regular_commit = True
                     
                     # === REGULAR COMMIT (if not skipped) ===
@@ -286,7 +311,6 @@ class handler(BaseHTTPRequestHandler):
                     # === LEETCODE PLAN BONUS ===
                     # If user is owner or has leetcode plan, also commit to their leetcode repo
                     # But respect daily limits - LeetCode users get max 1 commit per day (unless owner)
-                    leetcode_repo_name = user.get('leetcode_repo')
                     if (is_owner or plan == 'leetcode') and leetcode_repo_name:
                         # Check if we should skip LeetCode too (for non-owners)
                         leetcode_commits_today = user.get('leetcode_daily_count', 0)
