@@ -151,12 +151,10 @@ class handler(BaseHTTPRequestHandler):
                         except (ValueError, IndexError) as e:
                              logs.append(f"User {user['github_username']}: Invalid time format {commit_time_str} - {e}")
                     else:
-                        # No specific time set - run between 8 PM to 12 AM IST
+                        # No specific time set - run anytime
                         # Daily limit (daily_commit_count) will prevent duplicates
-                        if now_ist.hour >= 20 and now_ist.hour < 24:
-                            should_run_now = True
-                        else:
-                            logs.append(f"User {user['github_username']}: Default schedule - Waiting for 8 PM - 12 AM IST window")
+                        should_run_now = True
+                        logs.append(f"User {user['github_username']}: Using default schedule (anytime)")
 
                     if not should_run_now:
                         continue
@@ -325,9 +323,43 @@ class handler(BaseHTTPRequestHandler):
                                     import random
                                     import hashlib
                                     
-                                    # Pick a random LeetCode problem number (1-3000)
-                                    # Gemini knows ALL problems - no need to hardcode them!
-                                    problem_number = random.randint(1, 3000)
+                                    # Get existing files in the repo to avoid duplicates
+                                    existing_problems = set()
+                                    try:
+                                        contents = leetcode_repo.get_contents("")
+                                        def scan_folder(items):
+                                            for item in items:
+                                                if item.type == "dir":
+                                                    try:
+                                                        sub_items = leetcode_repo.get_contents(item.path)
+                                                        scan_folder(sub_items)
+                                                    except:
+                                                        pass
+                                                elif item.name.endswith('.py'):
+                                                    # Extract problem number from filename (e.g., "1_two_sum_abc123.py" -> 1)
+                                                    try:
+                                                        prob_num = int(item.name.split('_')[0])
+                                                        existing_problems.add(prob_num)
+                                                    except:
+                                                        pass
+                                        scan_folder(contents if isinstance(contents, list) else [contents])
+                                        logs.append(f"LeetCode: Found {len(existing_problems)} existing problems in repo")
+                                    except Exception as scan_error:
+                                        logs.append(f"LeetCode: Could not scan existing problems: {scan_error}")
+                                    
+                                    # Pick a random problem that doesn't already exist
+                                    max_attempts = 10
+                                    problem_number = None
+                                    for attempt in range(max_attempts):
+                                        candidate = random.randint(1, 3000)
+                                        if candidate not in existing_problems:
+                                            problem_number = candidate
+                                            break
+                                    
+                                    if problem_number is None:
+                                        # Fallback: just pick a random one (might be duplicate but rare)
+                                        problem_number = random.randint(1, 3000)
+                                        logs.append(f"LeetCode: Warning - Could not find unique problem after {max_attempts} attempts")
                                     
                                     # Use Gemini AI to solve ANY LeetCode problem
                                     try:
