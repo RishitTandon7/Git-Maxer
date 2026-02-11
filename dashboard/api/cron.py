@@ -1,6 +1,7 @@
 from http.server import BaseHTTPRequestHandler
 import os
 import datetime
+import time
 from datetime import datetime as dt
 import pytz
 import hashlib
@@ -61,6 +62,9 @@ class handler(BaseHTTPRequestHandler):
 
             for user in users:
                 try:
+                    # Rate limit: add delay between users to avoid Gemini API quota issues
+                    time.sleep(3)
+                    
                     # Get user settings
                     github_username = user['github_username']
                     repo_name = user.get('repo_name', 'auto-contributions')
@@ -438,8 +442,8 @@ Generate production-ready code that passes all test cases!"""
                                             ai_solution = ai_output.strip()
                                         
                                         # Extract title and difficulty from AI response
-                                        problem_title = "Problem"
-                                        difficulty = "Unknown"
+                                        problem_title = f"Problem {problem_number}"
+                                        difficulty = "Medium"
                                         
                                         # Parse first few lines for metadata
                                         lines = ai_solution.split('\n')
@@ -463,7 +467,9 @@ Generate production-ready code that passes all test cases!"""
                                         
                                     except Exception as ai_error:
                                         logs.append(f"LeetCode: ❌ AI failed for Problem #{problem_number} - {ai_error}")
-                                        # Fallback: Create placeholder
+                                        # Fallback: Create placeholder with safe defaults
+                                        problem_title = f"Problem {problem_number}"
+                                        difficulty = "Medium"
                                         leetcode_content = f'''# {problem_number}. LeetCode Problem
 # LeetCode Link: https://leetcode.com/problems/
 

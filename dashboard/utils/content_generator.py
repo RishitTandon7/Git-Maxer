@@ -1,13 +1,14 @@
 import google.generativeai as genai
 import random
 import os
+import time
 from datetime import datetime
 
 # ============================================
 # MULTI-API-KEY & MULTI-MODEL ROTATION SYSTEM
 # ============================================
 
-# List of ACTUAL available Gemini models (verified working as of 2024)
+# List of ACTUAL available Gemini models (verified working Feb 2026)
 # Ordered by: Speed → Quality → Fallback
 GEMINI_MODELS = [
     'gemini-2.0-flash',           # Latest stable flash model ⚡
@@ -15,7 +16,7 @@ GEMINI_MODELS = [
     'gemini-1.5-flash-latest',    # Stable latest flash
     'gemini-1.5-flash-8b',        # 8B parameter version (faster)
     'gemini-1.5-pro-latest',      # Pro model fallback (better quality)
-    'gemini-1.0-pro',             # Original pro model (reliable fallback)
+    # NOTE: gemini-1.0-pro removed - deprecated/404 as of 2025
 ]
 
 # Rotation state (persists across function calls using module-level variables)
@@ -197,15 +198,18 @@ def get_random_content(api_key=None, language='any', retry_count=0):
         
         # Check if we should retry with different API key/model
         if retry_count < max_retries:
-            # Specific error handling
+            # Specific error handling with appropriate delays
             if "404" in error_msg or "not found" in error_msg.lower():
                 print(f"⚠️ Model {model_name} not available, trying next...")
+                # No delay needed for model not found
             elif "429" in error_msg or "quota" in error_msg.lower():
-                print(f"⚠️ API key quota exceeded, rotating to next key...")
+                print(f"⚠️ API key quota exceeded, rotating to next key with delay...")
+                time.sleep(5)  # Wait 5 seconds before retrying with new key
             elif "403" in error_msg or "permission" in error_msg.lower():
                 print(f"⚠️ API key invalid, trying next...")
             else:
                 print(f"⚠️ Error with {model_name}: {error_msg[:100]}")
+                time.sleep(2)  # Small delay for unknown errors
             
             # Retry with next API key/model combination
             return get_random_content(api_key=None, language=language, retry_count=retry_count + 1)
